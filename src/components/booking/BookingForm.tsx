@@ -9,7 +9,13 @@ import { ChevronRight, ArrowLeft, CheckCircle2, User, MapPin, Calendar as Calend
 import { Input } from "@/components/ui/input";
 import { useBookingStore } from "@/store/useBookingStore";
 import { useToast } from "@/components/ui/use-toast";
-import { getServices, getLocations, getAvailableSlots } from "@/app/actions/booking";
+import {
+  getServices,
+  getLocations,
+  getAvailableSlots,
+  type ServiceOption,
+  type LocationOption,
+} from "@/app/actions/booking";
 import { format, addDays } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -120,7 +126,7 @@ export function BookingForm() {
 
 function StepService({ onNext }: { onNext: () => void }) {
   const { serviceId, setService } = useBookingStore();
-  const [services, setServices] = useState<Record<string, unknown>[]>([]);
+  const [services, setServices] = useState<ServiceOption[]>([]);
 
   useEffect(() => {
     getServices().then(setServices);
@@ -159,7 +165,7 @@ function StepService({ onNext }: { onNext: () => void }) {
 
 function StepLocation({ onNext }: { onNext: () => void }) {
   const { locationId, setLocation } = useBookingStore();
-  const [locations, setLocations] = useState<Record<string, unknown>[]>([]);
+  const [locations, setLocations] = useState<LocationOption[]>([]);
 
   useEffect(() => {
     getLocations().then(setLocations);

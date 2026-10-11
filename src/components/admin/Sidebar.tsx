@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { 
   LayoutDashboard, 
@@ -30,6 +30,16 @@ const navItems = [
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.push("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <>
@@ -81,7 +91,7 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-3">
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/50">
             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
               X
@@ -91,6 +101,13 @@ export function Sidebar() {
               <div className="text-xs text-muted-foreground">admin@xenon.studio</div>
             </div>
           </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleLogout}
+          >
+            Выйти
+          </Button>
         </div>
       </div>
     </>

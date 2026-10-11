@@ -20,6 +20,7 @@ export default function AdminChatPage() {
   useEffect(() => {
     // В реальности здесь подставляется JWT фотографа
     connectWs("mock_admin_token");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSend = () => {

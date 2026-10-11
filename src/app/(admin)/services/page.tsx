@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +14,7 @@ const mockServices = [
 ];
 
 export default function ServicesPage() {
-  const [services, setServices] = useState(mockServices);
+  const services = mockServices;
 
   return (
     <div className="h-full flex flex-col p-6 max-w-[1200px] mx-auto">

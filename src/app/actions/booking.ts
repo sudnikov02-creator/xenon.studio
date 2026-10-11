@@ -46,7 +46,7 @@ export async function getLocations() {
   }
 }
 
-export async function getAvailableSlots(date: string) {
+export async function getAvailableSlots() {
   // Имитация слотов для выбранного дня
   // В реальности здесь должна быть логика проверки занятых слотов через prisma.booking.findMany
   await new Promise(r => setTimeout(r, 500)); // Имитация задержки сети

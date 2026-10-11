@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, ArrowLeft, CheckCircle2, User, Clock, MapPin, Calendar as CalendarIcon, Save } from "lucide-react";
+import { ChevronRight, ArrowLeft, CheckCircle2, User, MapPin, Calendar as CalendarIcon, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useBookingStore } from "@/store/useBookingStore";
 import { useToast } from "@/components/ui/use-toast";
 import { getServices, getLocations, getAvailableSlots } from "@/app/actions/booking";
-import { format, addDays, startOfWeek, addDays as addDaysFns, isSameDay } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +59,7 @@ export function BookingForm() {
         action: <Save className="w-4 h-4" />
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -87,7 +88,7 @@ export function BookingForm() {
             {step === 0 && <StepService onNext={handleNext} />}
             {step === 1 && <StepLocation onNext={handleNext} />}
             {step === 2 && <StepDateTime onNext={handleNext} />}
-            {step === 3 && <StepDetails onNext={handleNext} />}
+            {step === 3 && <StepDetails />}
             {step === 4 && <StepConfirm />}
           </motion.div>
         </AnimatePresence>
@@ -119,7 +120,7 @@ export function BookingForm() {
 
 function StepService({ onNext }: { onNext: () => void }) {
   const { serviceId, setService } = useBookingStore();
-  const [services, setServices] = useState<any[]>([]);
+  const [services, setServices] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     getServices().then(setServices);
@@ -158,7 +159,7 @@ function StepService({ onNext }: { onNext: () => void }) {
 
 function StepLocation({ onNext }: { onNext: () => void }) {
   const { locationId, setLocation } = useBookingStore();
-  const [locations, setLocations] = useState<any[]>([]);
+  const [locations, setLocations] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     getLocations().then(setLocations);
@@ -278,7 +279,7 @@ function StepDateTime({ onNext }: { onNext: () => void }) {
   );
 }
 
-function StepDetails({ onNext }: { onNext: () => void }) {
+function StepDetails() {
   const { clientData, setClientData } = useBookingStore();
 
   return (
@@ -333,6 +334,14 @@ function StepConfirm() {
       <h3 className="text-2xl font-bold text-center">Все готово к записи</h3>
       
       <div className="w-full bg-muted/30 rounded-2xl p-5 space-y-3 text-sm">
+        <div className="flex justify-between border-b pb-3">
+          <span className="text-muted-foreground">Услуга</span>
+          <span className="font-medium text-right">{serviceId ? 'Выбрана' : '—'}</span>
+        </div>
+        <div className="flex justify-between border-b pb-3">
+          <span className="text-muted-foreground">Локация</span>
+          <span className="font-medium text-right">{locationId ? 'Выбрана' : 'Без локации'}</span>
+        </div>
         <div className="flex justify-between border-b pb-3">
           <span className="text-muted-foreground">Дата и время</span>
           <span className="font-medium text-right">{selectedDate} в {selectedTime}</span>

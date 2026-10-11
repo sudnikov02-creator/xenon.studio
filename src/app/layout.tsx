@@ -4,6 +4,8 @@ import "./globals.css";
 import { Splash } from "@/components/Splash";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
+import { Toaster } from "@/components/ui/toaster";
+
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {

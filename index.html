@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="xenon.studio — бронирование и управление фотосессиями" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="xenon.studio" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>xenon.studio</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f4f6fb;
+        font-family: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: radial-gradient(70% 55% at 50% 0%, #eaf1ff 0%, #f4f6fb 60%, #f4f6fb 100%);
+      }
+      #boot .mark {
+        width: 50px;
+        height: 50px;
+        border-radius: 15px;
+        background: linear-gradient(140deg, #3b82f6, #1d4ed8);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 16px 34px -18px rgba(37, 99, 235, 0.75);
+        animation: bootPulse 1.8s ease-in-out infinite;
+      }
+      #boot .name {
+        font-size: 13px;
+        color: #8494ad;
+        letter-spacing: 0.02em;
+      }
+      #boot .bar {
+        width: 108px;
+        height: 3px;
+        border-radius: 999px;
+        background: #e3e9f4;
+        overflow: hidden;
+        position: relative;
+      }
+      #boot .bar::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        width: 40%;
+        border-radius: 999px;
+        background: #2563eb;
+        animation: bootSlide 1.2s cubic-bezier(0.22, 0.72, 0.24, 1) infinite;
+      }
+      @keyframes bootSlide {
+        0% {
+          transform: translateX(-110%);
+        }
+        100% {
+          transform: translateX(330%);
+        }
+      }
+      @keyframes bootPulse {
+        0%,
+        100% {
+          opacity: 0.75;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+      noscript .noscript-card {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+        font-size: 14px;
+        color: #5b6b85;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div id="boot">
+        <div class="mark">
+          <svg width="31" height="31" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <circle cx="32" cy="32" r="15.5" stroke="#fff" stroke-width="2.6" opacity="0.96" />
+            <path d="M32 22.2 40.5 27v9.6L32 41.4 23.5 36.6V27z" stroke="#fff" stroke-width="2" stroke-linejoin="round" opacity="0.86" />
+            <circle cx="32" cy="32" r="2.2" fill="#fff" />
+          </svg>
+        </div>
+        <div class="name">xenon.studio</div>
+        <div class="bar"></div>
+      </div>
+    </div>
+    <noscript>
+      <div class="noscript-card">
+        Для работы xenon.studio включите JavaScript в настройках браузера.
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

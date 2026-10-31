@@ -19,6 +19,20 @@ router.patch('/', requireAuth, (req, res) => {
       return res.status(422).json({ error: 'invalid_schedule', message: 'Некорректные рабочие дни' });
     }
   }
+  if (patch.bookingForm !== undefined) {
+    if (!patch.bookingForm || typeof patch.bookingForm !== 'object' || Array.isArray(patch.bookingForm)) {
+      return res.status(422).json({ error: 'invalid_booking_form', message: 'Некорректные настройки формы' });
+    }
+    const form = patch.bookingForm;
+    const steps = [15, 30, 45, 60];
+    patch.bookingForm = {
+      requireVerification: form.requireVerification !== false,
+      slotStepMin: steps.includes(Number(form.slotStepMin)) ? Number(form.slotStepMin) : 30,
+      askNote: form.askNote !== false,
+      askInstagram: form.askInstagram === true,
+      introText: String(form.introText || '').trim().slice(0, 240)
+    };
+  }
   const current = getSettings();
   const merged = { ...patch };
   for (const [key, value] of Object.entries(patch)) {

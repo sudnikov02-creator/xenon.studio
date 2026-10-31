@@ -187,6 +187,18 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS phone_verifications (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  phone       TEXT NOT NULL,
+  code        TEXT NOT NULL,
+  attempts    INTEGER NOT NULL DEFAULT 0,
+  expires_at  TEXT NOT NULL,
+  verified_at TEXT,
+  used_at     TEXT,
+  token       TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS lookups (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL,
@@ -201,6 +213,7 @@ CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_verifications_phone ON phone_verifications(phone, created_at DESC);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -239,6 +252,13 @@ export const DEFAULT_SETTINGS = {
   vipDiscount: { enabled: false, percent: 10 },
   loyalty: { enabled: false, percent: 5, afterSessions: 3 },
   schedule: DEFAULT_SCHEDULE,
+  bookingForm: {
+    requireVerification: true,
+    slotStepMin: 30,
+    askNote: true,
+    askInstagram: false,
+    introText: ''
+  },
   dashboard: {
     metrics: { bookings: true, revenue: true, avgCheck: true, clients: true },
     widgets: [

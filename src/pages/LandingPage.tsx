@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarCheck2, MessageSquare, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, CalendarCheck2, CalendarPlus, MessageSquare, ShieldCheck, Sparkles } from 'lucide-react';
 import { BrandMark } from '../components/ui/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -38,8 +38,12 @@ export function LandingPage() {
           </div>
         </div>
         <div className="public__nav-actions">
-          <Link to={user ? '/admin' : '/login'} className="btn btn--soft">
-            {user ? 'Открыть панель' : 'Войти в студию'}
+          <Link to="/booking" className="btn btn--soft">
+            Записаться
+            <CalendarPlus />
+          </Link>
+          <Link to={user ? '/admin' : '/login'} className="btn btn--ghost">
+            {user ? 'Открыть панель' : 'Войти'}
             <ArrowRight />
           </Link>
         </div>
@@ -59,16 +63,16 @@ export function LandingPage() {
           пересматривать.
         </p>
         <div className="public__cta">
-          <Link to={user ? '/admin' : '/login'} className="btn btn--primary btn--lg">
-            {user ? 'Перейти в панель студии' : 'Войти в студию'}
+          <Link to="/booking" className="btn btn--primary btn--lg">
+            Записаться на съёмку
             <ArrowRight />
           </Link>
-          <a className="btn btn--lg" href="mailto:studio@xenon.studio">
-            Написать фотографу
-          </a>
+          <Link to={user ? '/admin' : '/login'} className="btn btn--lg">
+            {user ? 'Перейти в панель студии' : 'Войти в студию'}
+          </Link>
         </div>
         <div className="public__note">
-          <ShieldCheck /> Личный кабинет фотографа · запись по индивидуальной ссылке
+          <ShieldCheck /> Свободное время, стоимость и подтверждение — сразу на сайте
         </div>
 
         <div className="public__cards">

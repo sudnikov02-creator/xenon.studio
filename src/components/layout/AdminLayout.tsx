@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { useRealtime } from '../../context/RealtimeContext';
+import { QuickBookingProvider } from '../../context/QuickBookingContext';
 
 function PageFallback() {
   return (
@@ -33,22 +34,24 @@ export function AdminLayout() {
 
   useEffect(() => {
     return subscribe('booking', () => {
-      // Bookings UI subscribes to live updates in a later phase.
+      // Записи получают живые обновления на своих страницах (этап 5).
     });
   }, [subscribe]);
 
   return (
-    <div className="admin">
-      <Sidebar />
-      <div className="admin__main">
-        <Topbar />
-        <main id="main-content">
-          <Suspense fallback={<PageFallback />}>
-            <Outlet />
-          </Suspense>
-        </main>
+    <QuickBookingProvider>
+      <div className="admin">
+        <Sidebar />
+        <div className="admin__main">
+          <Topbar />
+          <main id="main-content">
+            <Suspense fallback={<PageFallback />}>
+              <Outlet />
+            </Suspense>
+          </main>
+        </div>
+        <BottomNav />
       </div>
-      <BottomNav />
-    </div>
+    </QuickBookingProvider>
   );
 }

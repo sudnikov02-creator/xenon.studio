@@ -61,7 +61,7 @@ npm start           # Express отдаёт dist + API на PORT (по умолч
 
 ```
 api/
-  [...path].js        serverless-вход для Vercel: один catch-all на весь /api
+  index.js            serverless-вход для Vercel: принимает весь /api через rewrite
 server/
   app.js              фабрика Express-приложения (роуты, статика, ошибки)
   index.js            локальный/прод-сервер: слушает порт, graceful shutdown
@@ -126,7 +126,14 @@ src/
 ## Деплой на Vercel
 
 Репозиторий готов к деплою без ручных настроек: `vercel.json` задаёт сборку Vite, статику из `dist`
-и единственную serverless-функцию `api/[...path].js`, которая отдаёт весь Express-API.
+и единственную serverless-функцию `api/index.js`, которая отдаёт весь Express-API.
+
+Прод: **https://xenonstudio.vercel.app**
+
+Маршрутизация API: `vercel.json` переписывает `/api/*` на `/api/index`, исходный путь при этом
+сохраняется, поэтому Express видит привычные адреса (`/api/auth/login`, `/api/bookings/12/accept`).
+Каталог `api/[...path].js` (catch-all из файловой системы) для этого не подходит — Vercel подхватывает
+такой файл только для одного сегмента пути.
 
 ```bash
 # локальная проверка serverless-сборки

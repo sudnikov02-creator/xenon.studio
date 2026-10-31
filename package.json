@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"node server/index.js\" \"vite --host 0.0.0.0\"",
     "dev:web": "vite --host 0.0.0.0",

@@ -5,7 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.XENON_DATA_DIR || path.resolve(__dirname, '..', 'data');
+/* Vercel (and any serverless host) exposes only /tmp as writable — the demo DB lives there
+   and is re-seeded on every cold start. Locally the repo keeps ./data. */
+const DEFAULT_DATA_DIR = process.env.VERCEL
+  ? path.join('/tmp', 'xenon-data')
+  : path.resolve(__dirname, '..', 'data');
+const DATA_DIR = process.env.XENON_DATA_DIR || DEFAULT_DATA_DIR;
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 export const db = new Database(process.env.XENON_DB || path.join(DATA_DIR, 'xenon.db'));

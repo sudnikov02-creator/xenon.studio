@@ -6,6 +6,14 @@ let privateKey = null;
 let ready = false;
 
 function loadOrCreateKeys() {
+  /* Fixed keys (required on serverless hosts, where /tmp is wiped between cold starts). */
+  const envPublic = process.env.XENON_VAPID_PUBLIC;
+  const envPrivate = process.env.XENON_VAPID_PRIVATE;
+  if (envPublic && envPrivate) {
+    publicKey = envPublic;
+    privateKey = envPrivate;
+    return;
+  }
   const row = db.prepare("SELECT value FROM lookups WHERE kind = 'vapid' ORDER BY id LIMIT 1").get();
   if (row) {
     try {

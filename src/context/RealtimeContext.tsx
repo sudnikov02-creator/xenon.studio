@@ -101,7 +101,17 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       if (name !== 'settings' && name !== 'hello') refreshBadges();
     };
 
-    const forwarded = ['notification', 'settings', 'activity', 'booking', 'message', 'client', 'status'];
+    const forwarded = [
+      'notification',
+      'settings',
+      'activity',
+      'booking',
+      'message',
+      'client',
+      'status',
+      'service',
+      'package'
+    ];
     const handlers = forwarded.map((name) => [name, forward(name)] as const);
     handlers.forEach(([name, handler]) => source.addEventListener(name, handler));
 

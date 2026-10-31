@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { DEFAULT_SCHEDULE, normalizeSchedule } from './lib/schedule.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -232,6 +233,7 @@ export const DEFAULT_SETTINGS = {
   appleCalendar: { enabled: false, url: '' },
   vipDiscount: { enabled: false, percent: 10 },
   loyalty: { enabled: false, percent: 5, afterSessions: 3 },
+  schedule: DEFAULT_SCHEDULE,
   dashboard: {
     metrics: { bookings: true, revenue: true, avgCheck: true, clients: true },
     widgets: [
@@ -246,16 +248,27 @@ export const DEFAULT_SETTINGS = {
 
 export function getSettings() {
   const row = db.prepare('SELECT data FROM settings WHERE id = 1').get();
-  if (!row) return { ...DEFAULT_SETTINGS };
-  try {
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(row.data) };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
+  const stored = (() => {
+    if (!row) return {};
+    try {
+      return JSON.parse(row.data) || {};
+    } catch {
+      return {};
+    }
+  })();
+  const merged = { ...DEFAULT_SETTINGS, ...stored };
+  merged.schedule = normalizeSchedule(stored.schedule, DEFAULT_SCHEDULE);
+  return merged;
 }
 
 export function saveSettings(patch) {
-  const merged = { ...getSettings(), ...patch };
+  const current = getSettings();
+  const merged = { ...current, ...patch };
+  if (patch && patch.schedule !== undefined) {
+    merged.schedule = normalizeSchedule(patch.schedule, current.schedule);
+    merged.minNoticeHours = merged.schedule.minNoticeHours;
+    merged.bookingHorizonDays = merged.schedule.horizonDays;
+  }
   const now = new Date().toISOString();
   db.prepare(
     `INSERT INTO settings (id, data, updated_at) VALUES (1, ?, ?)

@@ -11,7 +11,7 @@ interface ModalProps {
   icon?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  size?: 'narrow' | 'default' | 'wide' | 'full';
+  size?: 'narrow' | 'medium' | 'default' | 'wide' | 'full';
   className?: string;
   hideClose?: boolean;
 }

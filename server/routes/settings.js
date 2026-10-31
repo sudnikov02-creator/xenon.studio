@@ -11,6 +11,14 @@ router.get('/', requireAuth, (req, res) => {
 
 router.patch('/', requireAuth, (req, res) => {
   const patch = req.body || {};
+  if (patch.schedule !== undefined) {
+    if (!patch.schedule || typeof patch.schedule !== 'object' || Array.isArray(patch.schedule)) {
+      return res.status(422).json({ error: 'invalid_schedule', message: 'Некорректное расписание' });
+    }
+    if (patch.schedule.week !== undefined && !Array.isArray(patch.schedule.week)) {
+      return res.status(422).json({ error: 'invalid_schedule', message: 'Некорректные рабочие дни' });
+    }
+  }
   const current = getSettings();
   const merged = { ...patch };
   for (const [key, value] of Object.entries(patch)) {
@@ -23,6 +31,9 @@ router.patch('/', requireAuth, (req, res) => {
   }
   const settings = saveSettings(merged);
   broadcast('settings', settings);
+  if (patch.schedule !== undefined) {
+    logActivity({ type: 'schedule', title: 'Расписание обновлено', description: settings.siteName });
+  }
   if (patch.photographerName !== undefined || patch.siteName !== undefined) {
     logActivity({ type: 'settings', title: 'Настройки студии обновлены', description: settings.siteName });
   }

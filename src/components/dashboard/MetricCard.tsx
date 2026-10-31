@@ -1,7 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { useCountUp } from '../../hooks/useCountUp';
-import { METRIC_META } from '../../lib/dashboard';
 import { formatMoney } from '../../lib/utils';
+import { METRIC_META } from '../../lib/dashboard';
 import type { MetricKey, MetricValue } from '../../types';
 
 export function MetricCard({
@@ -17,7 +17,7 @@ export function MetricCard({
 }) {
   const meta = METRIC_META[metricKey];
   const Icon = meta.icon;
-  const animated = useCountUp(metric.value, 850);
+  const animated = useCountUp(metric.value, 900);
   const display =
     meta.kind === 'money'
       ? formatMoney(animated, currencySymbol, decimalSeparator)
@@ -44,9 +44,8 @@ export function MetricCard({
       </div>
       <div className="mcard__label">{meta.label}</div>
       <div className="mcard__foot">
-        к прошлому месяцу
-        <span aria-hidden>·</span>
         было {meta.kind === 'money' ? formatMoney(metric.previous, currencySymbol, decimalSeparator) : metric.previous}
+        <span aria-hidden>·</span> прошлый месяц
       </div>
     </article>
   );

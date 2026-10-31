@@ -19,6 +19,8 @@ const ProfilePage = lazy(() => import('../pages/admin/ProfilePage').then((m) => 
 const SectionPreviewPage = lazy(() =>
   import('../pages/admin/SectionPreviewPage').then((m) => ({ default: m.SectionPreviewPage }))
 );
+const ServicesPage = lazy(() => import('../pages/admin/ServicesPage').then((m) => ({ default: m.ServicesPage })));
+const SchedulePage = lazy(() => import('../pages/admin/SchedulePage').then((m) => ({ default: m.SchedulePage })));
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, status } = useAuth();
@@ -43,7 +45,6 @@ const MARKETING_ROUTES: { path: string; section: string }[] = [
 ];
 
 const SETTINGS_ROUTES: { path: string; section: string }[] = [
-  { path: 'settings/schedule', section: 'schedule' },
   { path: 'settings/booking-form', section: 'booking-form' },
   { path: 'settings/statuses', section: 'statuses' },
   { path: 'settings/notifications', section: 'notifications' },
@@ -62,7 +63,6 @@ const SECTION_ROUTES: { path: string; section: string }[] = [
   { path: 'calendar', section: 'calendar' },
   { path: 'clients', section: 'clients' },
   { path: 'messages', section: 'messages' },
-  { path: 'services', section: 'services' },
   { path: 'reviews', section: 'reviews' },
   { path: 'analytics', section: 'analytics' },
   { path: 'activity', section: 'activity' },
@@ -109,6 +109,8 @@ export function App() {
                   >
                     <Route index element={<DashboardPage />} />
                     <Route path="settings/profile" element={<ProfilePage />} />
+                    <Route path="services" element={<ServicesPage />} />
+                    <Route path="settings/schedule" element={<SchedulePage />} />
                     {SECTION_ROUTES.map((route) => (
                       <Route
                         key={route.path}

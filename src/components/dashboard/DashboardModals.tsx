@@ -1,36 +1,23 @@
 import { useEffect, useState } from 'react';
-import {
-  ChevronDown,
-  ChevronUp,
-  LayoutGrid,
-  RotateCcw,
-  SlidersHorizontal,
-  X
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw, SlidersHorizontal, XCircle } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Switch } from '../ui/Switch';
-import {
-  METRIC_META,
-  METRIC_ORDER,
-  WIDGET_CONFIG_FIELDS,
-  WIDGET_META
-} from '../../lib/dashboard';
-import { useSettings } from '../../context/SettingsContext';
+import { METRIC_META, METRIC_ORDER, WIDGET_CONFIG_FIELDS, WIDGET_META } from '../../lib/dashboard';
 import { formatDayTime } from '../../lib/utils';
 import type { BookingSummary, DashboardLayout, MetricKey, WidgetId } from '../../types';
 
 export function CustomizeDashboardModal({
   open,
-  onClose,
   layout,
+  onClose,
   onToggleMetric,
   onToggleWidget,
   onMoveWidget,
   onReset
 }: {
   open: boolean;
-  onClose: () => void;
   layout: DashboardLayout;
+  onClose: () => void;
   onToggleMetric: (key: MetricKey) => void;
   onToggleWidget: (id: WidgetId, visible: boolean) => void;
   onMoveWidget: (id: WidgetId, direction: -1 | 1) => void;
@@ -41,9 +28,9 @@ export function CustomizeDashboardModal({
       open={open}
       onClose={onClose}
       title="Настроить дашборд"
-      subtitle="Метрики, виджеты и их порядок"
+      subtitle="Выберите метрики и виджеты. Порядок меняется стрелками или перетаскиванием."
+      size="medium"
       icon={<SlidersHorizontal />}
-      size="default"
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onReset}>
@@ -60,20 +47,20 @@ export function CustomizeDashboardModal({
         <section className="customize__section">
           <div className="customize__head">
             <h4>Метрики</h4>
-            <p>Верхний ряд карточек с показателями месяца</p>
+            <p>Четыре цифры над виджетами. Скрытые метрики не занимают место.</p>
           </div>
           <div className="customize__list">
             {METRIC_ORDER.map((key) => {
               const meta = METRIC_META[key];
               const Icon = meta.icon;
               return (
-                <div className="customize__row" key={key}>
+                <div className="customize__row" key={key} data-hidden={!layout.metrics[key]}>
                   <span className={`customize__icon customize__icon--${meta.tone}`}>
                     <Icon />
                   </span>
                   <div className="customize__text">
                     <b>{meta.label}</b>
-                    <em>Показатель текущего месяца</em>
+                    <em>{meta.kind === 'money' ? 'Сумма и средний чек' : 'Количество за текущий месяц'}</em>
                   </div>
                   <Switch
                     checked={layout.metrics[key]}
@@ -89,7 +76,7 @@ export function CustomizeDashboardModal({
         <section className="customize__section">
           <div className="customize__head">
             <h4>Виджеты</h4>
-            <p>Порядок и видимость блоков на дашборде</p>
+            <p>Порядок виджетов на странице. Дашборд сохраняется автоматически.</p>
           </div>
           <div className="customize__list">
             {layout.widgets.map((widget, index) => {
@@ -108,25 +95,25 @@ export function CustomizeDashboardModal({
                     <button
                       type="button"
                       className="btn btn--icon btn--bordered customize__arrow"
-                      onClick={() => onMoveWidget(widget.id, -1)}
-                      disabled={index === 0}
                       aria-label={`Переместить «${meta.title}» выше`}
+                      disabled={index === 0}
+                      onClick={() => onMoveWidget(widget.id, -1)}
                     >
                       <ChevronUp />
                     </button>
                     <button
                       type="button"
                       className="btn btn--icon btn--bordered customize__arrow"
-                      onClick={() => onMoveWidget(widget.id, 1)}
-                      disabled={index === layout.widgets.length - 1}
                       aria-label={`Переместить «${meta.title}» ниже`}
+                      disabled={index === layout.widgets.length - 1}
+                      onClick={() => onMoveWidget(widget.id, 1)}
                     >
                       <ChevronDown />
                     </button>
                   </div>
                   <Switch
                     checked={widget.visible}
-                    onChange={(next) => onToggleWidget(widget.id, next)}
+                    onChange={(value) => onToggleWidget(widget.id, value)}
                     label={`Показывать виджет «${meta.title}»`}
                   />
                 </div>
@@ -136,8 +123,8 @@ export function CustomizeDashboardModal({
         </section>
 
         <div className="customize__hint">
-          <LayoutGrid />
-          <span>Виджеты можно перетаскивать прямо на дашборде — за иконку с точками в правом верхнем углу.</span>
+          <SlidersHorizontal />
+          <span>Изменения сохраняются сразу и применяются на всех устройствах — перезагрузка не нужна.</span>
         </div>
       </div>
     </Modal>
@@ -146,27 +133,25 @@ export function CustomizeDashboardModal({
 
 export function WidgetConfigModal({
   widgetId,
-  layout,
-  onToggleField,
-  onClose
+  config,
+  onClose,
+  onToggle
 }: {
   widgetId: WidgetId | null;
-  layout: DashboardLayout;
-  onToggleField: (id: WidgetId, key: string, value: boolean) => void;
+  config: Record<string, boolean>;
   onClose: () => void;
+  onToggle: (id: WidgetId, key: string, value: boolean) => void;
 }) {
-  const widget = widgetId ? layout.widgets.find((item) => item.id === widgetId) : null;
   const meta = widgetId ? WIDGET_META[widgetId] : null;
   const fields = widgetId ? WIDGET_CONFIG_FIELDS[widgetId] : [];
-  const Icon = meta?.icon;
 
   return (
     <Modal
-      open={Boolean(widgetId && meta && fields.length > 0)}
+      open={Boolean(widgetId)}
       onClose={onClose}
-      title={meta ? `Настройка · ${meta.title}` : 'Настройка виджета'}
-      subtitle="Что показывать внутри блока"
-      icon={Icon ? <Icon /> : undefined}
+      title={meta ? `Настройка «${meta.title}»` : 'Настройка виджета'}
+      subtitle="Что показывать внутри виджета"
+      size="narrow"
       footer={
         <>
           <div className="spacer" />
@@ -177,19 +162,23 @@ export function WidgetConfigModal({
       }
     >
       <div className="config-list">
-        {fields.map((field) => (
-          <div className="config-row" key={field.key}>
-            <div>
-              <b>{field.label}</b>
-              {field.hint && <span>{field.hint}</span>}
+        {widgetId &&
+          fields.map((field) => (
+            <div className="config-row" key={field.key}>
+              <div>
+                <b>{field.label}</b>
+                <span>{field.hint}</span>
+              </div>
+              <Switch
+                checked={config[field.key] !== false}
+                onChange={(value) => onToggle(widgetId, field.key, value)}
+                label={field.label}
+              />
             </div>
-            <Switch
-              checked={widget ? widget.config[field.key] !== false : true}
-              onChange={(next) => widgetId && onToggleField(widgetId, field.key, next)}
-              label={field.label}
-            />
-          </div>
-        ))}
+          ))}
+        {fields.length === 0 && (
+          <p className="config-empty">У этого виджета нет параметров — он всегда показывает полный месяц.</p>
+        )}
       </div>
     </Modal>
   );
@@ -197,16 +186,17 @@ export function WidgetConfigModal({
 
 export function DeclineBookingModal({
   booking,
+  timezone,
   busy,
   onClose,
   onSubmit
 }: {
   booking: BookingSummary | null;
+  timezone: string;
   busy: boolean;
   onClose: () => void;
   onSubmit: (comment: string) => void;
 }) {
-  const { branding } = useSettings();
   const [comment, setComment] = useState('');
 
   useEffect(() => {
@@ -218,12 +208,9 @@ export function DeclineBookingModal({
       open={Boolean(booking)}
       onClose={onClose}
       title="Отклонить заявку"
-      subtitle={
-        booking
-          ? `${booking.client?.name || 'Клиент'} · ${formatDayTime(booking.startsAt, branding.timezone)}`
-          : undefined
-      }
-      icon={<X />}
+      subtitle={booking ? `${booking.client?.name || 'Клиент'} · ${formatDayTime(booking.startsAt, timezone)}` : ''}
+      size="narrow"
+      icon={<XCircle />}
       footer={
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>
@@ -243,20 +230,21 @@ export function DeclineBookingModal({
     >
       <div className="decline-body">
         <p>
-          Клиент увидит этот комментарий на своей странице записи. Он поможет объяснить решение — или оставьте
-          поле пустым.
+          Клиент получит уведомление об отказе. Если хотите сохранить отношения — коротко объясните причину и
+          предложите другую дату.
         </p>
         <label className="field">
-          <span className="field__label">Комментарий для клиента</span>
+          <span className="field__label">Комментарий для клиента (необязательно)</span>
           <textarea
             className="textarea"
             value={comment}
             maxLength={600}
+            rows={4}
+            placeholder="Например: к сожалению, эта дата уже занята. Могу предложить 2 ноября после 15:00."
             onChange={(event) => setComment(event.target.value)}
-            placeholder="Например: к сожалению, эта дата уже занята — предложу ближайшие свободные дни"
           />
+          <span className="decline-counter">{comment.length}/600</span>
         </label>
-        <div className="decline-counter">{comment.length} / 600</div>
       </div>
     </Modal>
   );

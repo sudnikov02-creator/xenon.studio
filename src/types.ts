@@ -49,6 +49,7 @@ export interface StudioSettings extends Branding {
   vipDiscount: { enabled: boolean; percent: number };
   loyalty: { enabled: boolean; percent: number; afterSessions: number };
   dashboard: DashboardLayout;
+  schedule: Schedule;
   [key: string]: unknown;
 }
 
@@ -169,4 +170,96 @@ export interface DashboardWidgetLayout {
 export interface DashboardLayout {
   metrics: Record<MetricKey, boolean>;
   widgets: DashboardWidgetLayout[];
+}
+
+
+/* ------------------------------- services ------------------------------- */
+
+export type AddonType = 'toggle' | 'quantity';
+
+export interface ServiceAddon {
+  id: string;
+  name: string;
+  type: AddonType;
+  price: number;
+  unit?: string;
+}
+
+export interface Service {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  buffer: number;
+  addons: ServiceAddon[];
+  isActive: boolean;
+  sortOrder: number;
+  bookings: number;
+  createdAt?: string;
+}
+
+export interface ServicePackage {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  serviceIds: number[];
+  addons: ServiceAddon[];
+  isActive: boolean;
+  sortOrder: number;
+  bookings: number;
+  createdAt?: string;
+}
+
+export interface ServiceDraft {
+  name: string;
+  description: string;
+  price: number;
+  duration: number;
+  buffer: number;
+  addons: ServiceAddon[];
+  isActive: boolean;
+}
+
+export interface PackageDraft {
+  name: string;
+  description: string;
+  price: number;
+  serviceIds: number[];
+  addons: ServiceAddon[];
+  isActive: boolean;
+}
+
+export interface ServicesPayload {
+  services: Service[];
+  packages: ServicePackage[];
+}
+
+/* ------------------------------- schedule ------------------------------- */
+
+export interface ScheduleDay {
+  day: number;
+  enabled: boolean;
+  start: string;
+  end: string;
+  breakStart: string | null;
+  breakEnd: string | null;
+}
+
+export interface ScheduleException {
+  date: string;
+  closed: boolean;
+  start: string | null;
+  end: string | null;
+  note: string | null;
+}
+
+export interface Schedule {
+  accepting: boolean;
+  week: ScheduleDay[];
+  bufferMin: number;
+  minNoticeHours: number;
+  horizonDays: number;
+  exceptions: ScheduleException[];
 }

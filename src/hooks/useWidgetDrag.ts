@@ -3,87 +3,73 @@ import type { WidgetId } from '../types';
 
 export interface WidgetDragState {
   id: WidgetId;
+  width: number;
+  height: number;
   x: number;
   y: number;
   dx: number;
   dy: number;
-  width: number;
-  height: number;
-  startX: number;
-  startY: number;
-  moved: boolean;
 }
 
 export function useWidgetDrag({
   visibleIds,
-  onReorder
+  onCommit
 }: {
   visibleIds: WidgetId[];
-  onReorder: (id: WidgetId, index: number) => void;
+  onCommit: (order: WidgetId[]) => void;
 }) {
   const [drag, setDrag] = useState<WidgetDragState | null>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState<number | null>(null);
-  const dragRef = useRef<WidgetDragState | null>(null);
+  const stateRef = useRef<WidgetDragState | null>(null);
   const placeholderRef = useRef<number | null>(null);
-  const idsRef = useRef<WidgetId[]>(visibleIds);
-  const onReorderRef = useRef(onReorder);
-  const active = drag !== null;
+  const visibleRef = useRef<WidgetId[]>(visibleIds);
+  const commitRef = useRef(onCommit);
+  const dragging = Boolean(drag);
 
-  idsRef.current = visibleIds;
-  onReorderRef.current = onReorder;
-
-  const startDrag = useCallback(
-    (event: ReactPointerEvent<HTMLElement>, id: WidgetId, element: HTMLElement) => {
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
-      event.preventDefault();
-      const rect = element.getBoundingClientRect();
-      const state: WidgetDragState = {
-        id,
-        x: event.clientX,
-        y: event.clientY,
-        dx: event.clientX - rect.left,
-        dy: event.clientY - rect.top,
-        width: rect.width,
-        height: rect.height,
-        startX: event.clientX,
-        startY: event.clientY,
-        moved: false
-      };
-      dragRef.current = state;
-      setDrag(state);
-      placeholderRef.current = null;
-      setPlaceholderIndex(null);
-    },
-    [visibleIds]
-  );
+  visibleRef.current = visibleIds;
+  commitRef.current = onCommit;
 
   const stop = useCallback(() => {
-    dragRef.current = null;
+    stateRef.current = null;
     placeholderRef.current = null;
     setDrag(null);
     setPlaceholderIndex(null);
+    document.body.classList.remove('is-widget-dragging');
+  }, []);
+
+  const start = useCallback((event: ReactPointerEvent<HTMLButtonElement>, id: WidgetId, element: HTMLElement) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    const rect = element.getBoundingClientRect();
+    const state: WidgetDragState = {
+      id,
+      width: rect.width,
+      height: rect.height,
+      x: event.clientX,
+      y: event.clientY,
+      dx: event.clientX - rect.left,
+      dy: event.clientY - rect.top
+    };
+    stateRef.current = state;
+    placeholderRef.current = visibleRef.current.indexOf(id);
+    setPlaceholderIndex(placeholderRef.current);
+    setDrag(state);
+    document.body.classList.add('is-widget-dragging');
   }, []);
 
   useEffect(() => {
-    if (!active) return;
+    if (!dragging) return;
 
-    const handleMove = (event: PointerEvent) => {
-      const state = dragRef.current;
+    const onMove = (event: PointerEvent) => {
+      const state = stateRef.current;
       if (!state) return;
-      const distance = Math.hypot(event.clientX - state.startX, event.clientY - state.startY);
-      if (!state.moved && distance < 4) return;
       if (event.cancelable) event.preventDefault();
-      if (!state.moved) {
-        const startIndex = Math.max(0, idsRef.current.indexOf(state.id));
-        placeholderRef.current = startIndex;
-        setPlaceholderIndex(startIndex);
-      }
-      setDrag({ ...state, x: event.clientX, y: event.clientY, moved: true });
+      setDrag((prev) => (prev ? { ...prev, x: event.clientX, y: event.clientY } : prev));
 
-      const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-widget-frame]'));
-      let index = nodes.length;
-      for (let i = 0; i < nodes.length; i++) {
-        const rect = nodes[i].getBoundingClientRect();
+      const frames = Array.from(document.querySelectorAll<HTMLElement>('[data-widget-frame]'));
+      let index = frames.length;
+      for (let i = 0; i < frames.length; i += 1) {
+        const rect = frames[i].getBoundingClientRect();
         if (event.clientY < rect.top + rect.height / 2) {
           index = i;
           break;
@@ -93,34 +79,34 @@ export function useWidgetDrag({
       setPlaceholderIndex(index);
     };
 
-    const handleUp = () => {
-      const state = dragRef.current;
-      const index = placeholderRef.current;
-      if (state && index !== null) {
-        onReorderRef.current(state.id, index);
+    const onUp = () => {
+      const state = stateRef.current;
+      const target = placeholderRef.current;
+      if (state) {
+        const rest = visibleRef.current.filter((id) => id !== state.id);
+        const clamped = Math.max(0, Math.min(target ?? rest.length, rest.length));
+        rest.splice(clamped, 0, state.id);
+        if (rest.join('|') !== visibleRef.current.join('|')) commitRef.current(rest);
       }
       stop();
     };
 
-    const handleCancel = () => stop();
-    const handleKey = (event: KeyboardEvent) => {
+    const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') stop();
     };
 
-    document.body.classList.add('is-widget-dragging');
-    window.addEventListener('pointermove', handleMove, { passive: false });
-    window.addEventListener('pointerup', handleUp);
-    window.addEventListener('pointercancel', handleCancel);
-    window.addEventListener('keydown', handleKey);
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    window.addEventListener('keydown', onKey);
 
     return () => {
-      document.body.classList.remove('is-widget-dragging');
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleUp);
-      window.removeEventListener('pointercancel', handleCancel);
-      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      window.removeEventListener('keydown', onKey);
     };
-  }, [active, stop]);
+  }, [dragging, stop]);
 
-  return { drag, placeholderIndex, startDrag, cancelDrag: stop };
+  return { drag, placeholderIndex, start, stop };
 }

@@ -1,21 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { LayoutGrid, RefreshCw, SlidersHorizontal, Wifi, WifiOff } from 'lucide-react';
+import {
+  LayoutGrid,
+  Plus,
+  Radio,
+  RefreshCw,
+  SlidersHorizontal,
+  TriangleAlert
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHead } from '../../components/ui/PageHead';
-import { useAuth } from '../../context/AuthContext';
-import { useRealtime } from '../../context/RealtimeContext';
-import { useSettings } from '../../context/SettingsContext';
-import { useToast } from '../../context/ToastContext';
-import { api, ApiError } from '../../lib/api';
-import {
-  DEFAULT_LAYOUT,
-  METRIC_ORDER,
-  WIDGET_META,
-  normalizeLayout
-} from '../../lib/dashboard';
-import { formatDate, formatTimeIn, greeting } from '../../lib/utils';
-import { useWidgetDrag } from '../../hooks/useWidgetDrag';
 import { MetricCard } from '../../components/dashboard/MetricCard';
 import { WidgetFrame } from '../../components/dashboard/WidgetFrame';
 import { TodayWidget } from '../../components/dashboard/TodayWidget';
@@ -27,6 +21,13 @@ import {
   DeclineBookingModal,
   WidgetConfigModal
 } from '../../components/dashboard/DashboardModals';
+import { useSettings } from '../../context/SettingsContext';
+import { useRealtime } from '../../context/RealtimeContext';
+import { useToast } from '../../context/ToastContext';
+import { api, ApiError } from '../../lib/api';
+import { METRIC_ORDER, WIDGET_META, normalizeLayout } from '../../lib/dashboard';
+import { formatDate, formatDayTime, formatTimeIn, greeting, plural } from '../../lib/utils';
+import { useWidgetDrag } from '../../hooks/useWidgetDrag';
 import type {
   BookingSummary,
   CalendarData,
@@ -36,88 +37,58 @@ import type {
   WidgetId
 } from '../../types';
 
-function MetricsSkeleton() {
-  return (
-    <div className="metrics-row" aria-hidden>
-      {[0, 1, 2, 3].map((index) => (
-        <div className="mcard card" key={index}>
-          <div className="mcard__top">
-            <span className="skeleton" style={{ width: 40, height: 40, borderRadius: '50%' }} />
-            <span className="skeleton" style={{ width: 58, height: 22, borderRadius: 8 }} />
-          </div>
-          <span className="skeleton" style={{ width: '62%', height: 30, marginTop: 20 }} />
-          <span className="skeleton" style={{ width: '48%', height: 11, marginTop: 10 }} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function WidgetsSkeleton() {
-  return (
-    <div className="widgets-grid" aria-hidden>
-      {[0, 1, 2, 3].map((index) => (
-        <div className="widget card" key={index}>
-          <div className="widget__head">
-            <span className="skeleton" style={{ width: 34, height: 34, borderRadius: 10 }} />
-            <span className="skeleton" style={{ width: 160, height: 13 }} />
-          </div>
-          <div className="widget__body">
-            <span className="skeleton" style={{ width: '100%', height: 52, borderRadius: 12 }} />
-            <span className="skeleton" style={{ width: '100%', height: 52, borderRadius: 12, marginTop: 8 }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function DashboardPage() {
-  const { user } = useAuth();
-  const { settings, branding, updateSettings } = useSettings();
-  const { connected, subscribe, refreshBadges } = useRealtime();
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { settings, branding, updateSettings } = useSettings();
+  const { subscribe, connected } = useRealtime();
+  const { toast } = useToast();
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [calendar, setCalendar] = useState<CalendarData | null>(null);
   const [calendarLoading, setCalendarLoading] = useState(false);
-  const [busyId, setBusyId] = useState<number | null>(null);
-  const [declineTarget, setDeclineTarget] = useState<BookingSummary | null>(null);
-  const [declineBusy, setDeclineBusy] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [configWidget, setConfigWidget] = useState<WidgetId | null>(null);
-  const calendarMonthRef = useRef<string | null>(null);
+  const [declineTarget, setDeclineTarget] = useState<BookingSummary | null>(null);
+  const [declining, setDeclining] = useState(false);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const mounted = useRef(true);
 
   const layout = useMemo(() => normalizeLayout(settings?.dashboard), [settings?.dashboard]);
   const visibleWidgets = useMemo(() => layout.widgets.filter((widget) => widget.visible), [layout]);
   const visibleIds = useMemo(() => visibleWidgets.map((widget) => widget.id), [visibleWidgets]);
 
-  const load = useCallback(async (silent = false) => {
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const load = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!silent) setLoading(true);
     try {
       const response = await api.get<DashboardData>('/dashboard');
+      if (!mounted.current) return;
       setData(response);
-      if (!calendarMonthRef.current) setCalendar(response.calendar);
+      setCalendar(response.calendar);
       setError(null);
     } catch (err) {
-      if (!silent) {
-        setError(err instanceof ApiError ? err.message : 'Не удалось загрузить дашборд');
-      }
+      if (!mounted.current) return;
+      if (!silent) setError(err instanceof ApiError ? err.message : 'Не удалось загрузить данные');
     } finally {
-      if (!silent) setLoading(false);
+      if (mounted.current && !silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void load(false);
+    void load();
   }, [load]);
 
   useEffect(() => {
     return subscribe('booking', () => {
-      void load(true);
+      void load({ silent: true });
     });
   }, [subscribe, load]);
 
@@ -135,6 +106,21 @@ export function DashboardPage() {
     },
     [updateSettings, toast]
   );
+
+  const commitOrder = useCallback(
+    (order: WidgetId[]) => {
+      const byId = new Map(layout.widgets.map((widget) => [widget.id, widget]));
+      const hidden = layout.widgets.filter((widget) => !widget.visible);
+      const widgets = order
+        .map((id) => byId.get(id))
+        .filter((widget): widget is NonNullable<typeof widget> => Boolean(widget))
+        .concat(hidden);
+      void persistLayout({ ...layout, widgets });
+    },
+    [layout, persistLayout]
+  );
+
+  const { drag, placeholderIndex, start } = useWidgetDrag({ visibleIds, onCommit: commitOrder });
 
   const toggleMetric = (key: MetricKey) => {
     void persistLayout({ ...layout, metrics: { ...layout.metrics, [key]: !layout.metrics[key] } });
@@ -156,7 +142,7 @@ export function DashboardPage() {
     void persistLayout({ ...layout, widgets });
   };
 
-  const toggleConfigField = (id: WidgetId, key: string, value: boolean) => {
+  const toggleWidgetConfig = (id: WidgetId, key: string, value: boolean) => {
     void persistLayout({
       ...layout,
       widgets: layout.widgets.map((widget) =>
@@ -166,37 +152,24 @@ export function DashboardPage() {
   };
 
   const resetLayout = () => {
-    void persistLayout(DEFAULT_LAYOUT);
-    toast({ title: 'Дашборд настроен по умолчанию', variant: 'success' });
+    void persistLayout(normalizeLayout(null));
+    toast({ title: 'Дашборд сброшен к стандартному виду', variant: 'info' });
   };
 
-  const { drag, placeholderIndex, startDrag } = useWidgetDrag({
-    visibleIds,
-    onReorder: (id, index) => {
-      const rest = visibleIds.filter((widgetId) => widgetId !== id);
-      rest.splice(Math.min(index, rest.length), 0, id);
-      if (rest.join('|') === visibleIds.join('|')) return;
-      const byId = new Map(layout.widgets.map((widget) => [widget.id, widget]));
-      const hidden = layout.widgets.filter((widget) => !widget.visible);
-      const widgets = [...rest.map((widgetId) => byId.get(widgetId)!).filter(Boolean), ...hidden];
-      void persistLayout({ ...layout, widgets });
-    }
-  });
-
-  const loadCalendarMonth = async (month: string) => {
+  const changeMonth = async (month: string) => {
     setCalendarLoading(true);
     try {
       const response = await api.get<CalendarData>(`/dashboard/calendar?month=${month}`);
-      calendarMonthRef.current = month;
+      if (!mounted.current) return;
       setCalendar(response);
     } catch (err) {
       toast({
-        title: 'Не удалось открыть месяц',
-        subtitle: err instanceof ApiError ? err.message : undefined,
+        title: 'Не удалось загрузить месяц',
+        subtitle: err instanceof ApiError ? err.message : 'Попробуйте ещё раз',
         variant: 'error'
       });
     } finally {
-      setCalendarLoading(false);
+      if (mounted.current) setCalendarLoading(false);
     }
   };
 
@@ -204,34 +177,38 @@ export function DashboardPage() {
     setBusyId(booking.id);
     try {
       await api.post(`/bookings/${booking.id}/accept`);
-      void refreshBadges();
       toast({
         title: 'Заявка подтверждена',
-        subtitle: `${booking.client?.name || 'Клиент'} · съёмка в расписании`,
+        subtitle: `${booking.client?.name || 'Клиент'} · ${formatDayTime(booking.startsAt, branding.timezone)}`,
         variant: 'success',
         action: { label: 'Открыть записи', onClick: () => navigate('/admin/bookings') }
       });
-      await load(true);
+      await load({ silent: true });
     } catch (err) {
+      const already = err instanceof ApiError && err.code === 'already_processed';
       toast({
-        title: 'Не удалось подтвердить заявку',
-        subtitle: err instanceof ApiError ? err.message : 'Попробуйте ещё раз',
-        variant: 'error'
+        title: already ? 'Заявка уже обработана' : 'Не удалось подтвердить заявку',
+        subtitle: already ? 'Обновите список — статус уже изменился' : err instanceof ApiError ? err.message : undefined,
+        variant: already ? 'info' : 'error'
       });
+      await load({ silent: true });
     } finally {
-      setBusyId(null);
+      if (mounted.current) setBusyId(null);
     }
   };
 
   const declineBooking = async (comment: string) => {
     if (!declineTarget) return;
-    setDeclineBusy(true);
+    setDeclining(true);
     try {
       await api.post(`/bookings/${declineTarget.id}/decline`, { comment });
-      void refreshBadges();
-      toast({ title: 'Заявка отклонена', subtitle: 'Клиент увидит ваш комментарий', variant: 'info' });
+      toast({
+        title: 'Заявка отклонена',
+        subtitle: declineTarget.client?.name || 'Клиент',
+        variant: 'info'
+      });
       setDeclineTarget(null);
-      await load(true);
+      await load({ silent: true });
     } catch (err) {
       toast({
         title: 'Не удалось отклонить заявку',
@@ -239,64 +216,74 @@ export function DashboardPage() {
         variant: 'error'
       });
     } finally {
-      setDeclineBusy(false);
+      if (mounted.current) setDeclining(false);
     }
   };
 
-  const firstName = (user?.name || branding.photographerName || '').split(' ')[0];
+  const metricKeys = METRIC_ORDER.filter((key) => layout.metrics[key]);
+  const firstName = (settings?.photographerName || branding.photographerName || 'Ксения').split(' ')[0];
   const dateLabel = formatDate(new Date(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     timeZone: branding.timezone
   });
-  const showMetrics = METRIC_ORDER.filter((key) => layout.metrics[key]);
-  const draggingId = drag?.moved ? drag.id : null;
+  const monthBookings = data?.metrics.bookings.value ?? 0;
 
   const renderList: ({ type: 'widget'; id: WidgetId } | { type: 'placeholder' })[] = [];
   visibleWidgets
-    .filter((widget) => widget.id !== draggingId)
+    .filter((widget) => widget.id !== drag?.id)
     .forEach((widget) => renderList.push({ type: 'widget', id: widget.id }));
-  if (draggingId && placeholderIndex !== null) {
+  if (drag && placeholderIndex !== null) {
     renderList.splice(Math.min(placeholderIndex, renderList.length), 0, { type: 'placeholder' });
   }
 
-  const pendingCount = data?.pending.length || 0;
-  const ghostMeta = drag ? WIDGET_META[drag.id] : null;
-  const GhostIcon = ghostMeta?.icon;
-
-  const renderWidgetBody = (id: WidgetId, config: Record<string, boolean>) => {
+  const widgetBody = (id: WidgetId, config: Record<string, boolean>) => {
+    if (!data) return null;
     switch (id) {
       case 'today':
-        return data ? (
-          <TodayWidget bookings={data.todayBookings} next={data.next} config={config} />
-        ) : (
-          <div className="widget-loading">
-            <span className="skeleton" style={{ height: 52, borderRadius: 12 }} />
-            <span className="skeleton" style={{ height: 52, borderRadius: 12 }} />
-          </div>
+        return (
+          <TodayWidget
+            bookings={data.todayBookings}
+            next={data.next}
+            timezone={branding.timezone}
+            currencySymbol={branding.currencySymbol}
+            decimalSeparator={branding.decimalSeparator}
+            showPrice={config.showPrice !== false}
+            showStatus={config.showStatus !== false}
+          />
         );
       case 'pending':
-        return data ? (
+        return (
           <PendingWidget
             items={data.pending.slice(0, 5)}
-            config={config}
+            timezone={branding.timezone}
+            currencySymbol={branding.currencySymbol}
+            decimalSeparator={branding.decimalSeparator}
+            showPrice={config.showPrice !== false}
             busyId={busyId}
-            onAccept={acceptBooking}
-            onDecline={setDeclineTarget}
+            onAccept={(booking) => void acceptBooking(booking)}
+            onDecline={(booking) => setDeclineTarget(booking)}
           />
-        ) : (
-          <div className="widget-loading">
-            <span className="skeleton" style={{ height: 62, borderRadius: 12 }} />
-            <span className="skeleton" style={{ height: 62, borderRadius: 12 }} />
-          </div>
         );
       case 'calendar':
         return (
-          <MiniCalendarWidget calendar={calendar} loading={calendarLoading} onLoadMonth={loadCalendarMonth} />
+          <MiniCalendarWidget
+            calendar={calendar}
+            loading={calendarLoading}
+            timezone={branding.timezone}
+            onMonthChange={(month) => void changeMonth(month)}
+          />
         );
       case 'revenue':
-        return <RevenueWidget revenue={data?.revenue || null} config={config} />;
+        return (
+          <RevenueWidget
+            revenue={data.revenue}
+            currencySymbol={branding.currencySymbol}
+            decimalSeparator={branding.decimalSeparator}
+            compare={config.compare !== false}
+          />
+        );
       default:
         return null;
     }
@@ -306,15 +293,24 @@ export function DashboardPage() {
     <div className="page dashboard">
       <PageHead
         title={`${greeting()}, ${firstName}`}
-        subtitle={`${dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)} · ${branding.brandTagline}`}
+        subtitle={`${dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)} · ${monthBookings} ${plural(
+          monthBookings,
+          'съёмка',
+          'съёмки',
+          'съёмок'
+        )} в этом месяце`}
+        badge={<span className="badge badge--accent">Этап 2</span>}
         actions={
           <>
-            <span className={`live-pill ${connected ? 'is-online' : ''}`}>
-              {connected ? <Wifi /> : <WifiOff />}
-              {connected ? 'На связи' : 'Подключение'}
+            <span className={`live-pill ${connected ? 'is-online' : ''}`} title={connected ? 'Обновления в реальном времени' : 'Восстанавливаем соединение'}>
+              <Radio />
+              {connected ? 'На связи' : 'Подключаемся'}
             </span>
             <button type="button" className="btn" onClick={() => setCustomizeOpen(true)}>
               <SlidersHorizontal /> Настроить
+            </button>
+            <button type="button" className="btn btn--primary" onClick={() => navigate('/admin/bookings')}>
+              <Plus /> Новая запись
             </button>
           </>
         }
@@ -322,11 +318,14 @@ export function DashboardPage() {
 
       {error && (
         <div className="card dashboard-error">
+          <span className="dashboard-error__icon">
+            <TriangleAlert />
+          </span>
           <div>
-            <b>Не удалось загрузить данные</b>
+            <b>Не удалось загрузить дашборд</b>
             <span>{error}</span>
           </div>
-          <button type="button" className="btn btn--soft" onClick={() => void load(false)}>
+          <button type="button" className="btn btn--sm" onClick={() => void load()}>
             <RefreshCw /> Повторить
           </button>
         </div>
@@ -334,14 +333,37 @@ export function DashboardPage() {
 
       {loading ? (
         <>
-          <MetricsSkeleton />
-          <WidgetsSkeleton />
+          <div className="metrics-row">
+            {METRIC_ORDER.map((key) => (
+              <div className="mcard card" key={key}>
+                <span className="skeleton" style={{ width: 42, height: 42, borderRadius: '50%' }} />
+                <span className="skeleton" style={{ width: '62%', height: 26, marginTop: 18 }} />
+                <span className="skeleton" style={{ width: '45%', height: 12, marginTop: 10 }} />
+              </div>
+            ))}
+          </div>
+          <div className="widgets-grid">
+            {[0, 1, 2, 3].map((index) => (
+              <div className="widget card" key={index}>
+                <div className="widget__head">
+                  <span className="skeleton" style={{ width: 34, height: 34, borderRadius: 10 }} />
+                  <div style={{ flex: 1 }}>
+                    <span className="skeleton" style={{ width: '45%', height: 13, display: 'block' }} />
+                    <span className="skeleton" style={{ width: '30%', height: 10, display: 'block', marginTop: 6 }} />
+                  </div>
+                </div>
+                <div className="widget__body">
+                  <span className="skeleton" style={{ height: 148, borderRadius: 12, display: 'block' }} />
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       ) : (
         <>
-          {showMetrics.length > 0 && data && (
+          {metricKeys.length > 0 && data && (
             <div className="metrics-row">
-              {showMetrics.map((key) => (
+              {metricKeys.map((key) => (
                 <MetricCard
                   key={key}
                   metricKey={key}
@@ -355,71 +377,67 @@ export function DashboardPage() {
 
           {visibleWidgets.length === 0 ? (
             <div className="card dashboard-empty">
-              <span className="widget-empty__icon">
+              <span className="dashboard-empty__icon">
                 <LayoutGrid />
               </span>
               <b>Все виджеты скрыты</b>
-              <p>Верните нужные блоки — дашборд снова станет вашим рабочим столом.</p>
+              <p>Верните нужные блоки — цифры и заявки снова появятся на своих местах.</p>
               <button type="button" className="btn btn--primary" onClick={() => setCustomizeOpen(true)}>
                 <SlidersHorizontal /> Настроить дашборд
               </button>
             </div>
           ) : (
-            <div className="widgets-grid" data-dragging={Boolean(draggingId) || undefined}>
-              {renderList.map((entry) => {
-                if (entry.type === 'placeholder') {
-                  return (
-                    <div
-                      className="widget-placeholder"
-                      key="widget-placeholder"
-                      style={{ height: drag ? Math.min(drag.height, 460) : undefined }}
-                    >
-                      <span>Перетащите сюда</span>
-                    </div>
-                  );
-                }
-                const widget = layout.widgets.find((item) => item.id === entry.id);
-                if (!widget) return null;
-                const meta = WIDGET_META[widget.id];
-                const index = layout.widgets.findIndex((item) => item.id === widget.id);
-                return (
-                  <WidgetFrame
-                    key={widget.id}
-                    id={widget.id}
-                    title={meta.title}
-                    subtitle={meta.description}
-                    icon={meta.icon}
-                    count={widget.id === 'pending' ? pendingCount : undefined}
-                    configurable={widget.id !== 'calendar'}
-                    canMoveUp={index > 0}
-                    canMoveDown={index >= 0 && index < layout.widgets.length - 1}
-                    onConfigure={() => setConfigWidget(widget.id)}
-                    onHide={() => toggleWidget(widget.id, false)}
-                    onMove={(direction) => moveWidget(widget.id, direction)}
-                    onOpenDashboardSettings={() => setCustomizeOpen(true)}
-                    onDragStart={(event, element) => startDrag(event, widget.id, element)}
+            <div className="widgets-grid" data-dragging={drag ? true : undefined}>
+              {renderList.map((item) =>
+                item.type === 'placeholder' ? (
+                  <div
+                    className="widget-placeholder"
+                    key="placeholder"
+                    style={{ height: drag ? Math.max(160, drag.height) : undefined }}
+                    aria-hidden
                   >
-                    {renderWidgetBody(widget.id, widget.config)}
+                    <span>Перетащите сюда</span>
+                  </div>
+                ) : (
+                  <WidgetFrame
+                    key={item.id}
+                    id={item.id}
+                    title={WIDGET_META[item.id].title}
+                    subtitle={WIDGET_META[item.id].description}
+                    icon={WIDGET_META[item.id].icon}
+                    count={item.id === 'pending' ? data?.pending.length : undefined}
+                    configurable={item.id !== 'calendar'}
+                    canMoveUp={layout.widgets.findIndex((widget) => widget.id === item.id) > 0}
+                    canMoveDown={
+                      layout.widgets.findIndex((widget) => widget.id === item.id) < layout.widgets.length - 1
+                    }
+                    onMoveUp={() => moveWidget(item.id, -1)}
+                    onMoveDown={() => moveWidget(item.id, 1)}
+                    onHide={() => toggleWidget(item.id, false)}
+                    onConfigure={() => setConfigWidget(item.id)}
+                    onConfigureDashboard={() => setCustomizeOpen(true)}
+                    onDragStart={(event, element) => start(event, item.id, element)}
+                  >
+                    {widgetBody(item.id, layout.widgets.find((widget) => widget.id === item.id)?.config || {})}
                   </WidgetFrame>
-                );
-              })}
-            </div>
-          )}
-
-          {data && (
-            <div className="dashboard-footnote">
-              <span>Обновлено в {formatTimeIn(data.generatedAt, branding.timezone)}</span>
-              <span>·</span>
-              <span>{pendingCount > 0 ? `${pendingCount} заявок ждут решения` : 'Все заявки обработаны'}</span>
+                )
+              )}
             </div>
           )}
         </>
       )}
 
+      <div className="dashboard-footer">
+        <span>
+          Обновлено {data ? formatTimeIn(data.generatedAt, branding.timezone) : '—'} · данные месяца{' '}
+          {data ? formatDate(`${data.month}-01T12:00:00Z`, { month: 'long', year: 'numeric', timeZone: 'UTC' }) : ''}
+        </span>
+      </div>
+
       <CustomizeDashboardModal
         open={customizeOpen}
-        onClose={() => setCustomizeOpen(false)}
         layout={layout}
+        onClose={() => setCustomizeOpen(false)}
         onToggleMetric={toggleMetric}
         onToggleWidget={toggleWidget}
         onMoveWidget={moveWidget}
@@ -428,38 +446,41 @@ export function DashboardPage() {
 
       <WidgetConfigModal
         widgetId={configWidget}
-        layout={layout}
-        onToggleField={toggleConfigField}
+        config={configWidget ? layout.widgets.find((widget) => widget.id === configWidget)?.config || {} : {}}
         onClose={() => setConfigWidget(null)}
+        onToggle={toggleWidgetConfig}
       />
 
       <DeclineBookingModal
         booking={declineTarget}
-        busy={declineBusy}
+        timezone={branding.timezone}
+        busy={declining}
         onClose={() => setDeclineTarget(null)}
-        onSubmit={declineBooking}
+        onSubmit={(comment) => void declineBooking(comment)}
       />
 
-      {drag?.moved &&
-        ghostMeta &&
+      {drag &&
         createPortal(
           <div
             className="widget-ghost"
             style={{
               width: drag.width,
-              height: Math.min(drag.height, 460),
+              height: Math.min(drag.height, 320),
               transform: `translate3d(${drag.x - drag.dx}px, ${drag.y - drag.dy}px, 0) scale(0.97)`
             }}
-            aria-hidden="true"
+            aria-hidden
           >
             <div className="widget-ghost__head">
-              <span className="widget-ghost__icon">{GhostIcon && <GhostIcon />}</span>
-              <span>{ghostMeta.title}</span>
+              {(() => {
+                const Icon = WIDGET_META[drag.id].icon;
+                return <Icon />;
+              })()}
+              <span>{WIDGET_META[drag.id].title}</span>
             </div>
             <div className="widget-ghost__body">
-              <span className="widget-ghost__line" style={{ width: '72%' }} />
-              <span className="widget-ghost__line" style={{ width: '90%' }} />
-              <span className="widget-ghost__line" style={{ width: '54%' }} />
+              <span />
+              <span />
+              <span />
             </div>
           </div>,
           document.body

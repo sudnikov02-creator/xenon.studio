@@ -150,19 +150,20 @@ export function ensureSeed() {
 
     /* statuses */
     const statuses = [
-      ['Заявка', '#f59e0b', 1, 0, 1, 1],
-      ['Подтверждена', '#2563eb', 0, 0, 1, 1],
-      ['Съёмка проведена', '#8b5cf6', 0, 0, 0, 0],
-      ['Обработка', '#0ea5e9', 0, 0, 0, 0],
-      ['Завершена', '#16a34a', 0, 1, 0, 1]
+      ['Заявка', '#f59e0b', 1, 0, 1, 1, 0],
+      ['Подтверждена', '#2563eb', 0, 0, 1, 1, 0],
+      ['Съёмка проведена', '#8b5cf6', 0, 0, 0, 0, 0],
+      ['Обработка', '#0ea5e9', 0, 0, 0, 0, 0],
+      ['Завершена', '#16a34a', 0, 1, 0, 1, 0],
+      ['Отклонена', '#ef4444', 0, 0, 0, 0, 1]
     ];
-    const statusIds = statuses.map(([name, color, isInitial, isFinal, canReschedule, canCancel], i) => {
+    const statusIds = statuses.map(([name, color, isInitial, isFinal, canReschedule, canCancel, isCancelled], i) => {
       const info = db
         .prepare(
-          `INSERT INTO statuses (name, color, sort_order, is_initial, is_final, client_can_reschedule, client_can_cancel)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO statuses (name, color, sort_order, is_initial, is_final, is_cancelled, client_can_reschedule, client_can_cancel)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(name, color, i, isInitial, isFinal, canReschedule, canCancel);
+        .run(name, color, name === 'Отклонена' ? 900 : i, isInitial, isFinal, isCancelled, canReschedule, canCancel);
       return Number(info.lastInsertRowid);
     });
 
@@ -175,10 +176,13 @@ export function ensureSeed() {
       ['Ирина Жукова', '+375 29 887-30-41', 'irina.zh@gmail.com', 'irina_zh', 'irina.zh', ['Контент'], 0, 1, 1],
       ['Павел Никитин', '+375 33 214-76-09', 'pavel.nikitin@mail.ru', 'pavel_n', null, ['Портрет'], 0, 2, 3],
       ['Ольга Морозова', '+375 25 559-04-28', 'olga.morozova@gmail.com', 'olga_mor', 'olga.mor', ['Семья', 'VIP'], 1, 6, 0],
-      ['Виктория Смирнова', '+375 44 301-66-90', 'vika.smirnova@mail.ru', 'vika_sm', 'vika.sm', [], 0, 1, 4]
+      ['Виктория Смирнова', '+375 44 301-66-90', 'vika.smirnova@mail.ru', 'vika_sm', 'vika.sm', [], 0, 1, 4],
+      ['Алина Гурская', '+375 29 604-17-35', 'alina.gurskaya@gmail.com', 'alina_gur', 'alina.gur', ['Новый клиент'], 0, 0, 0],
+      ['Сергей Мельник', '+375 33 508-92-61', 's.melnik@mail.ru', null, null, ['Новый клиент'], 0, 0, 0]
     ];
 
-    const clientIds = clients.map(([name, phone, email, tg, ig, tags, vip, sessions, offset]) => {
+    const clientCreatedOffsets = [-150, -128, -104, -78, -52, -26, -12, -5, 0, 0];
+    const clientIds = clients.map(([name, phone, email, tg, ig, tags, vip, sessions, offset], index) => {
       const info = db
         .prepare(
           `INSERT INTO clients (name, phone, email, telegram_username, instagram, tags, is_vip, created_at, notes)
@@ -192,7 +196,7 @@ export function ensureSeed() {
           ig,
           JSON.stringify(tags),
           vip,
-          iso(-120 + offset * 12),
+          iso(clientCreatedOffsets[index]),
           sessions > 3 ? 'Постоянный клиент, любит естественный свет и минимум ретуши.' : null
         );
       return Number(info.lastInsertRowid);
@@ -207,15 +211,60 @@ export function ensureSeed() {
       [2, 11, 0, 3, 1, 1, 'Подтверждена', 'Love story в ботаническом саду.'],
       [3, 13, 0, 4, 0, 0, 'Заявка', null],
       [4, 10, 30, 5, 4, 0, 'Подтверждена', 'Контент-съёмка для блога, три образа.'],
-      [-2, 12, 0, 1, 2, 0, 'Проведена', null],
+      [-1, 12, 0, 6, 4, 0, 'Завершена', null],
+      [-2, 12, 0, 1, 2, 0, 'Съёмка проведена', null],
+      [-3, 10, 0, 3, 1, 0, 'Завершена', null],
       [-4, 16, 0, 6, 0, 0, 'Обработка', 'Портрет, ретушь выборочная.'],
+      [-5, 16, 0, 0, 0, 0, 'Завершена', null],
+      [-6, 11, 30, 7, 2, 0, 'Завершена', null],
       [-7, 11, 0, 3, 2, 0, 'Завершена', null],
+      [-8, 13, 0, 4, 3, 0, 'Завершена', null],
+      [-9, 10, 0, 5, 4, 0, 'Завершена', null],
+      [-10, 15, 0, 1, 0, 1, 'Завершена', null],
       [-11, 14, 0, 0, 4, 0, 'Завершена', null],
+      [-12, 12, 30, 2, 2, 0, 'Завершена', null],
+      [-13, 17, 0, 6, 1, 0, 'Завершена', null],
       [-14, 10, 0, 4, 0, 0, 'Завершена', 'Портретная съёмка для соцсетей.'],
+      [-16, 11, 0, 3, 0, 0, 'Завершена', null],
+      [-17, 14, 0, 0, 4, 0, 'Завершена', null],
       [-19, 15, 30, 7, 1, 1, 'Завершена', null],
+      [-20, 10, 0, 7, 3, 0, 'Завершена', null],
+      [-22, 16, 30, 4, 1, 0, 'Завершена', null],
       [-24, 12, 0, 5, 2, 0, 'Завершена', null],
+      [-25, 12, 0, 5, 2, 0, 'Завершена', null],
+      [-27, 15, 0, 1, 0, 0, 'Завершена', null],
+      [-29, 11, 0, 6, 4, 0, 'Завершена', null],
       [-31, 13, 0, 2, 0, 0, 'Завершена', null],
-      [-38, 11, 0, 6, 4, 0, 'Завершена', 'Контент для блога о материнстве.']
+      [-33, 13, 0, 2, 2, 0, 'Завершена', null],
+      [-36, 10, 30, 3, 1, 0, 'Завершена', null],
+      [-38, 11, 0, 6, 4, 0, 'Завершена', 'Контент для блога о материнстве.'],
+      [-40, 16, 0, 0, 0, 0, 'Завершена', null],
+      [-44, 12, 0, 7, 3, 0, 'Завершена', null],
+      [-48, 11, 0, 4, 4, 0, 'Завершена', null],
+      [-52, 14, 30, 5, 2, 0, 'Завершена', null],
+      [-57, 10, 0, 1, 0, 1, 'Завершена', null],
+      [-62, 15, 0, 6, 1, 0, 'Завершена', null],
+      [-68, 12, 0, 2, 2, 0, 'Завершена', null],
+      [-74, 16, 0, 0, 3, 0, 'Завершена', null],
+      /* upcoming month — keeps the calendar and «следующая съёмка» alive */
+      [5, 12, 0, 3, 2, 0, 'Подтверждена', 'Съёмка в студии, два образа.'],
+      [6, 15, 30, 5, 4, 0, 'Подтверждена', null],
+      [7, 11, 0, 0, 0, 0, 'Подтверждена', 'Портрет для профиля, деловой стиль.'],
+      [9, 16, 0, 2, 3, 0, 'Подтверждена', 'Прогулка в парке, золотая осень.'],
+      [10, 10, 30, 6, 1, 0, 'Заявка', null],
+      [12, 13, 0, 4, 0, 0, 'Подтверждена', null],
+      [14, 17, 0, 7, 4, 0, 'Подтверждена', 'Свадебная съёмка, полный день.'],
+      [17, 12, 0, 1, 2, 0, 'Подтверждена', 'Семейная съёмка дома при естественном свете.'],
+      [19, 11, 0, 3, 1, 0, 'Подтверждена', null],
+      [21, 15, 0, 5, 4, 0, 'Подтверждена', 'Контент-съёмка для маркетплейса.'],
+      [24, 10, 0, 0, 0, 0, 'Заявка', null],
+      [27, 14, 30, 6, 3, 0, 'Подтверждена', null],
+      [30, 12, 0, 2, 2, 0, 'Подтверждена', 'Детская съёмка, торт-сюрприз.'],
+      [33, 16, 0, 4, 1, 0, 'Подтверждена', null],
+      [36, 11, 0, 7, 0, 0, 'Подтверждена', 'Портретная серия для соцсетей.'],
+      [39, 13, 30, 1, 2, 0, 'Подтверждена', null],
+      [8, 15, 0, 8, 0, 0, 'Заявка', 'Первый раз на съёмке, нужен совет по образу.'],
+      [11, 12, 30, 9, 4, 0, 'Подтверждена', 'Мини-съёмка для профиля.']
     ];
 
     const insertBooking = db.prepare(
@@ -230,13 +279,14 @@ export function ensureSeed() {
       const service = services[serviceIdx];
       const statusIdx = statuses.findIndex((s) => s[0] === statusName);
       const price = isPackage ? 12000 : service.price;
-      const created = new Date(Date.now() - (60 - i) * 36e5).toISOString();
+      const startsIso = iso(day, hour, minute);
+      const created = new Date(new Date(startsIso).getTime() - (2 + (i % 4)) * 864e5).toISOString();
       const info = insertBooking.run({
         code: makePublicCode(),
         client: clientIds[clientIdx],
         service: isPackage ? null : serviceIds[serviceIdx],
         pkg: isPackage ? 1 : null,
-        starts: iso(day, hour, minute),
+        starts: startsIso,
         duration: service.duration,
         price,
         addons: '[]',

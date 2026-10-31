@@ -4,10 +4,12 @@ import { CalendarDays, LayoutDashboard, Menu, MessageSquare, Users } from 'lucid
 import { useRealtime } from '../../context/RealtimeContext';
 import { MoreSheet } from './MoreSheet';
 
-const ITEMS = [
+type BadgeKey = 'messages' | 'pending';
+
+const ITEMS: { key: string; label: string; path: string; icon: typeof LayoutDashboard; badge?: BadgeKey }[] = [
   { key: 'dashboard', label: 'Дашборд', path: '/admin', icon: LayoutDashboard },
-  { key: 'bookings', label: 'Записи', path: '/admin/bookings', icon: CalendarDays },
-  { key: 'messages', label: 'Сообщения', path: '/admin/messages', icon: MessageSquare, badge: true },
+  { key: 'bookings', label: 'Записи', path: '/admin/bookings', icon: CalendarDays, badge: 'pending' },
+  { key: 'messages', label: 'Сообщения', path: '/admin/messages', icon: MessageSquare, badge: 'messages' },
   { key: 'clients', label: 'Клиенты', path: '/admin/clients', icon: Users }
 ];
 
@@ -26,6 +28,8 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { badges } = useRealtime();
+  const badgeCount = (item: { badge?: BadgeKey }) =>
+    item.badge === 'messages' ? badges.unreadMessages : item.badge === 'pending' ? badges.pendingBookings : 0;
   const [moreOpen, setMoreOpen] = useState(false);
 
   const moreActive = MORE_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
@@ -48,9 +52,9 @@ export function BottomNav() {
               >
                 <Icon />
                 <span>{item.label}</span>
-                {item.badge && badges.unreadMessages > 0 && (
-                  <span className="bottomnav__badge">
-                    {badges.unreadMessages > 9 ? '9+' : badges.unreadMessages}
+                {badgeCount(item) > 0 && (
+                  <span className="bottomnav__badge" data-tone={item.badge === 'pending' ? 'pending' : undefined}>
+                    {badgeCount(item) > 9 ? '9+' : badgeCount(item)}
                   </span>
                 )}
               </button>

@@ -15,6 +15,8 @@ import notificationRoutes from './routes/notifications.js';
 import realtimeRoutes from './routes/realtime.js';
 import pushRoutes from './routes/push.js';
 import publicRoutes from './routes/public.js';
+import dashboardRoutes from './routes/dashboard.js';
+import bookingRoutes from './routes/bookings.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3001);
@@ -46,6 +48,8 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/bookings', bookingRoutes);
 app.use('/api', realtimeRoutes);
 
 app.use('/api', (req, res) => {

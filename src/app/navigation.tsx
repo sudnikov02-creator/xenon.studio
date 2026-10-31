@@ -42,13 +42,13 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   path?: string;
-  badge?: 'messages';
+  badge?: 'messages' | 'pending';
   children?: NavChild[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', label: 'Дашборд', path: '/admin', icon: LayoutDashboard },
-  { key: 'bookings', label: 'Записи', path: '/admin/bookings', icon: CalendarDays },
+  { key: 'bookings', label: 'Записи', path: '/admin/bookings', icon: CalendarDays, badge: 'pending' },
   { key: 'calendar', label: 'Календарь', path: '/admin/calendar', icon: CalendarRange },
   { key: 'clients', label: 'Клиенты', path: '/admin/clients', icon: Users },
   { key: 'messages', label: 'Сообщения', path: '/admin/messages', icon: MessageSquare, badge: 'messages' },

@@ -333,6 +333,7 @@
   line-height: 1;
 }
 .counter--muted { background: var(--surface-3); color: var(--muted); }
+.counter[data-tone='pending'] { background: var(--warning-soft); color: var(--warning); }
 .counter--dot {
   min-width: 8px;
   width: 8px;

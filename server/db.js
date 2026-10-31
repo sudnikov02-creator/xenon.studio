@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS statuses (
   sort_order            INTEGER NOT NULL DEFAULT 0,
   is_initial            INTEGER NOT NULL DEFAULT 0,
   is_final              INTEGER NOT NULL DEFAULT 0,
+  is_cancelled          INTEGER NOT NULL DEFAULT 0,
   client_can_reschedule INTEGER NOT NULL DEFAULT 1,
   client_can_cancel     INTEGER NOT NULL DEFAULT 1,
   actions               TEXT NOT NULL DEFAULT '[]',
@@ -200,6 +201,15 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at
 /*  Settings                                                           */
 /* ------------------------------------------------------------------ */
 
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!columns.some((col) => col.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${definition}`);
+  }
+}
+
+ensureColumn('statuses', 'is_cancelled', 'is_cancelled INTEGER NOT NULL DEFAULT 0');
+
 export const DEFAULT_SETTINGS = {
   siteName: 'xenon.studio',
   photographerName: 'Ксения Ветрова',
@@ -223,11 +233,12 @@ export const DEFAULT_SETTINGS = {
   vipDiscount: { enabled: false, percent: 10 },
   loyalty: { enabled: false, percent: 5, afterSessions: 3 },
   dashboard: {
+    metrics: { bookings: true, revenue: true, avgCheck: true, clients: true },
     widgets: [
-      { id: 'today', visible: true },
-      { id: 'pending', visible: true },
-      { id: 'calendar', visible: true },
-      { id: 'revenue', visible: true }
+      { id: 'today', visible: true, config: { showPrice: true, showStatus: true } },
+      { id: 'pending', visible: true, config: { showPrice: true } },
+      { id: 'calendar', visible: true, config: {} },
+      { id: 'revenue', visible: true, config: { compare: true } }
     ]
   },
   sidebarCollapsed: false

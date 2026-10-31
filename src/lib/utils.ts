@@ -82,3 +82,57 @@ export function greeting(date = new Date()): string {
 export function isoDay(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+export function zonedDayKey(value: string | Date, timeZone = 'Europe/Minsk'): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((part) => part.type === type)?.value || '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+export function formatTimeIn(value: string | Date, timeZone = 'Europe/Minsk'): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return new Intl.DateTimeFormat('ru-RU', { timeZone, hour: '2-digit', minute: '2-digit' }).format(date);
+}
+
+export function formatDayLabel(value: string | Date, timeZone = 'Europe/Minsk'): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  const key = zonedDayKey(date, timeZone);
+  const today = zonedDayKey(new Date(), timeZone);
+  const tomorrow = zonedDayKey(new Date(Date.now() + 86400000), timeZone);
+  if (key === today) return 'сегодня';
+  if (key === tomorrow) return 'завтра';
+  return new Intl.DateTimeFormat('ru-RU', { timeZone, day: 'numeric', month: 'long' }).format(date);
+}
+
+export function formatDayTime(value: string | Date, timeZone = 'Europe/Minsk'): string {
+  const label = formatDayLabel(value, timeZone);
+  return `${label.charAt(0).toUpperCase() + label.slice(1)}, ${formatTimeIn(value, timeZone)}`;
+}
+
+export function formatMonthTitle(month: string): string {
+  const [year, m] = month.split('-').map(Number);
+  const label = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(year, m - 1, 1))
+  );
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export function shiftMonthKey(month: string, delta: number): string {
+  const [year, m] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, m - 1 + delta, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+export function dayMonthLabel(dayKey: string): string {
+  const [year, m, d] = dayKey.split('-').map(Number);
+  const label = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(year, m - 1, d))
+  );
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}

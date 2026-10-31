@@ -61,6 +61,9 @@ export function Sidebar() {
   };
 
   const unread = badges.unreadMessages;
+  const pending = badges.pendingBookings;
+  const badgeCount = (item: NavItem) =>
+    item.badge === 'messages' ? unread : item.badge === 'pending' ? pending : 0;
 
   const renderNavItem = (item: NavItem) => {
     const Icon = item.icon;
@@ -82,7 +85,11 @@ export function Sidebar() {
       >
         <Icon />
         <span className="nav-item__label">{item.label}</span>
-        {item.badge === 'messages' && unread > 0 && <span className="counter">{unread > 99 ? '99+' : unread}</span>}
+        {badgeCount(item) > 0 && (
+          <span className="counter" data-tone={item.badge === 'pending' ? 'pending' : undefined}>
+            {badgeCount(item) > 99 ? '99+' : badgeCount(item)}
+          </span>
+        )}
         {item.children && <ChevronRight className="nav-item__chev" />}
       </button>
     );

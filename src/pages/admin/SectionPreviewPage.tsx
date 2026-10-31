@@ -8,7 +8,7 @@ import { useCountUp } from '../../hooks/useCountUp';
 export function SectionPreviewPage({ sectionKey }: { sectionKey: string }) {
   const info = SECTIONS[sectionKey];
   const { branding } = useSettings();
-  const ready = useCountUp(6.25, 700);
+  const ready = useCountUp(12.5, 800);
 
   if (!info) return null;
   const Icon = info.icon;
@@ -41,7 +41,7 @@ export function SectionPreviewPage({ sectionKey }: { sectionKey: string }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
             <span
-              className="metric__icon"
+              className="mcard__icon"
               style={{ width: 46, height: 46, borderRadius: 14 }}
             >
               <Icon />
@@ -68,7 +68,7 @@ export function SectionPreviewPage({ sectionKey }: { sectionKey: string }) {
 
           <div className="preview__progress">
             <div className="preview__progress-top">
-              <span>Раздел в очереди · этап 1 из 16</span>
+              <span>Готово 2 из 16 этапов</span>
               <b className="tnum">{Math.round(ready)}%</b>
             </div>
             <div className="preview__progress-bar">

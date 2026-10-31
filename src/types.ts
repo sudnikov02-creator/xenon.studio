@@ -263,3 +263,85 @@ export interface Schedule {
   horizonDays: number;
   exceptions: ScheduleException[];
 }
+
+/* ------------------------------- booking form ------------------------------- */
+
+export interface BookingFormSchedule {
+  accepting: boolean;
+  minNoticeHours: number;
+  horizonDays: number;
+  bufferMin: number;
+  week: { day: number; enabled: boolean; start: string; end: string }[];
+  exceptions: { date: string; closed: boolean; start: string | null; end: string | null; note: string | null }[];
+}
+
+export interface BookingFormOptions {
+  services: Service[];
+  packages: ServicePackage[];
+  today: string;
+  month: string;
+  schedule: BookingFormSchedule;
+  form: {
+    requireVerification: boolean;
+    slotStepMin: number;
+    askNote: boolean;
+    askInstagram: boolean;
+    introText: string;
+  };
+  agreement: { enabled: boolean; text: string; consentText: string };
+  branding: {
+    siteName: string;
+    photographerName: string;
+    timezone: string;
+    currencySymbol: string;
+    decimalSeparator: 'comma' | 'dot';
+  };
+}
+
+export interface AvailabilityDay {
+  count: number;
+  first: string;
+  last: string;
+}
+
+export interface AvailabilityResponse {
+  month: string;
+  days: Record<string, AvailabilityDay>;
+  firstFree: string | null;
+  today: string;
+  accepting: boolean;
+}
+
+export interface BookingSlot {
+  time: string;
+  iso: string;
+}
+
+export interface SlotsResponse {
+  date: string;
+  duration: number;
+  slots: BookingSlot[];
+  accepting: boolean;
+  minNoticeHours: number;
+}
+
+export interface BookingDraft {
+  serviceId: number | null;
+  packageId: number | null;
+  date: string;
+  time: string;
+  addons: Record<string, number>;
+  name: string;
+  phone: string;
+  email: string;
+  instagram: string;
+  note: string;
+  agreed: boolean;
+}
+
+export interface CreatedBooking {
+  booking: BookingSummary;
+  clientId: number;
+  message: string;
+  localDate: string;
+}

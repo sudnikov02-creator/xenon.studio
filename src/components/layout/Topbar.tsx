@@ -27,7 +27,7 @@ import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { api } from '../../lib/api';
 import { initials, relativeTime } from '../../lib/utils';
 import type { NotificationItem } from '../../types';
-import { QuickBookingModal } from './QuickBookingModal';
+import { useQuickBooking } from '../../context/QuickBookingContext';
 
 const KIND_ICON = {
   booking: CalendarDays,
@@ -48,7 +48,7 @@ export function Topbar() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [quickOpen, setQuickOpen] = useState(false);
+  const { open: openQuickBooking } = useQuickBooking();
 
   const closeNotif = useCallback(() => setNotifOpen(false), []);
   const closeProfile = useCallback(() => setProfileOpen(false), []);
@@ -137,7 +137,7 @@ export function Topbar() {
           <button
             type="button"
             className="btn btn--primary quick-btn"
-            onClick={() => setQuickOpen(true)}
+            onClick={openQuickBooking}
             aria-label="Быстрая запись"
           >
             <CalendarPlus />
@@ -343,7 +343,7 @@ export function Topbar() {
         </div>
       </header>
 
-      <QuickBookingModal open={quickOpen} onClose={() => setQuickOpen(false)} />
+
     </>
   );
 }

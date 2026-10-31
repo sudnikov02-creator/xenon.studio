@@ -13,6 +13,7 @@ const RegisterPage = lazy(() => import('../pages/auth/RegisterPage').then((m) =>
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 const ExpiredLinkPage = lazy(() => import('../pages/ExpiredLinkPage').then((m) => ({ default: m.ExpiredLinkPage })));
 const BookingLinkPage = lazy(() => import('../pages/BookingLinkPage').then((m) => ({ default: m.BookingLinkPage })));
+const BookingPage = lazy(() => import('../pages/BookingPage').then((m) => ({ default: m.BookingPage })));
 const AdminLayout = lazy(() => import('../components/layout/AdminLayout').then((m) => ({ default: m.AdminLayout })));
 const DashboardPage = lazy(() => import('../pages/admin/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const ProfilePage = lazy(() => import('../pages/admin/ProfilePage').then((m) => ({ default: m.ProfilePage })));
@@ -21,6 +22,9 @@ const SectionPreviewPage = lazy(() =>
 );
 const ServicesPage = lazy(() => import('../pages/admin/ServicesPage').then((m) => ({ default: m.ServicesPage })));
 const SchedulePage = lazy(() => import('../pages/admin/SchedulePage').then((m) => ({ default: m.SchedulePage })));
+const BookingFormSettingsPage = lazy(() =>
+  import('../pages/admin/BookingFormSettingsPage').then((m) => ({ default: m.BookingFormSettingsPage }))
+);
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, status } = useAuth();
@@ -45,7 +49,6 @@ const MARKETING_ROUTES: { path: string; section: string }[] = [
 ];
 
 const SETTINGS_ROUTES: { path: string; section: string }[] = [
-  { path: 'settings/booking-form', section: 'booking-form' },
   { path: 'settings/statuses', section: 'statuses' },
   { path: 'settings/notifications', section: 'notifications' },
   { path: 'settings/currency', section: 'currency' },
@@ -98,6 +101,7 @@ export function App() {
                   />
                   <Route path="/expired" element={<ExpiredLinkPage />} />
                   <Route path="/b/:code" element={<BookingLinkPage />} />
+                  <Route path="/booking" element={<BookingPage />} />
 
                   <Route
                     path="/admin"
@@ -111,6 +115,7 @@ export function App() {
                     <Route path="settings/profile" element={<ProfilePage />} />
                     <Route path="services" element={<ServicesPage />} />
                     <Route path="settings/schedule" element={<SchedulePage />} />
+                    <Route path="settings/booking-form" element={<BookingFormSettingsPage />} />
                     {SECTION_ROUTES.map((route) => (
                       <Route
                         key={route.path}

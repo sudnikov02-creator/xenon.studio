@@ -17,6 +17,7 @@ import publicRoutes from './routes/public.js';
 import dashboardRoutes from './routes/dashboard.js';
 import bookingRoutes from './routes/bookings.js';
 import servicesRoutes from './routes/services.js';
+import bookingFormRoutes from './routes/booking-form.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, '..', 'dist');
@@ -61,6 +62,7 @@ export function createApp({ serveStatic = true } = {}) {
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/push', pushRoutes);
   app.use('/api/public', publicRoutes);
+  app.use('/api/public', bookingFormRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/bookings', bookingRoutes);
   app.use('/api', servicesRoutes);

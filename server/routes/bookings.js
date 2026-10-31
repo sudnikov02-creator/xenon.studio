@@ -3,6 +3,7 @@ import { db, logActivity } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
 import { broadcast, broadcastBadges } from '../lib/sse.js';
 import { getBookingById } from '../lib/bookings.js';
+import { createBooking } from '../lib/booking-create.js';
 
 const router = express.Router();
 
@@ -49,6 +50,16 @@ function cleanComment(value) {
   if (!comment) return null;
   return comment.slice(0, MAX_COMMENT);
 }
+
+/** Ручная запись фотографа: без проверки телефона и без ограничения «минимальный запас». */
+router.post('/', requireAuth, (req, res) => {
+  const result = createBooking({
+    payload: req.body || {},
+    source: 'admin',
+    force: req.body?.force === true
+  });
+  res.status(result.status).json(result.body);
+});
 
 router.post('/:id/accept', requireAuth, (req, res) => {
   const booking = bookingRow(Number(req.params.id));

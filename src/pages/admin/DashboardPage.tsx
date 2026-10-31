@@ -9,6 +9,7 @@ import {
   TriangleAlert
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuickBooking } from '../../context/QuickBookingContext';
 import { PageHead } from '../../components/ui/PageHead';
 import { MetricCard } from '../../components/dashboard/MetricCard';
 import { WidgetFrame } from '../../components/dashboard/WidgetFrame';
@@ -39,6 +40,7 @@ import type {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { open: openQuickBooking } = useQuickBooking();
   const { settings, branding, updateSettings } = useSettings();
   const { subscribe, connected } = useRealtime();
   const { toast } = useToast();
@@ -309,7 +311,7 @@ export function DashboardPage() {
             <button type="button" className="btn" onClick={() => setCustomizeOpen(true)}>
               <SlidersHorizontal /> Настроить
             </button>
-            <button type="button" className="btn btn--primary" onClick={() => navigate('/admin/bookings')}>
+            <button type="button" className="btn btn--primary" onClick={openQuickBooking}>
               <Plus /> Новая запись
             </button>
           </>

@@ -199,6 +199,87 @@ CREATE TABLE IF NOT EXISTS phone_verifications (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS discounts (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'percent',
+  value       REAL NOT NULL DEFAULT 0,
+  scope       TEXT NOT NULL DEFAULT 'all',
+  item_ids    TEXT NOT NULL DEFAULT '[]',
+  min_amount  REAL NOT NULL DEFAULT 0,
+  audience    TEXT NOT NULL DEFAULT 'all',
+  auto        INTEGER NOT NULL DEFAULT 1,
+  stackable   INTEGER NOT NULL DEFAULT 0,
+  priority    INTEGER NOT NULL DEFAULT 0,
+  starts_on   TEXT,
+  ends_on     TEXT,
+  is_active   INTEGER NOT NULL DEFAULT 1,
+  used_count  INTEGER NOT NULL DEFAULT 0,
+  note        TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS coupons (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  code             TEXT NOT NULL UNIQUE,
+  title            TEXT,
+  kind             TEXT NOT NULL DEFAULT 'percent',
+  value            REAL NOT NULL DEFAULT 0,
+  discount_id      INTEGER REFERENCES discounts(id) ON DELETE SET NULL,
+  limit_total      INTEGER NOT NULL DEFAULT 0,
+  limit_per_client INTEGER NOT NULL DEFAULT 1,
+  used_count       INTEGER NOT NULL DEFAULT 0,
+  min_amount       REAL NOT NULL DEFAULT 0,
+  starts_on        TEXT,
+  ends_on          TEXT,
+  is_active        INTEGER NOT NULL DEFAULT 1,
+  note             TEXT,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS coupon_redemptions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  coupon_id  INTEGER NOT NULL REFERENCES coupons(id) ON DELETE CASCADE,
+  booking_id INTEGER,
+  client_id  INTEGER,
+  phone      TEXT,
+  amount     REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS certificates (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  code         TEXT NOT NULL UNIQUE,
+  kind         TEXT NOT NULL DEFAULT 'amount',
+  amount       REAL NOT NULL DEFAULT 0,
+  remaining    REAL NOT NULL DEFAULT 0,
+  service_id   INTEGER REFERENCES services(id) ON DELETE SET NULL,
+  recipient    TEXT,
+  phone        TEXT,
+  email        TEXT,
+  client_id    INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+  purchased_at TEXT,
+  expires_at   TEXT,
+  status       TEXT NOT NULL DEFAULT 'active',
+  note         TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at   TEXT
+);
+
+CREATE TABLE IF NOT EXISTS certificate_redemptions (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  certificate_id INTEGER NOT NULL REFERENCES certificates(id) ON DELETE CASCADE,
+  booking_id     INTEGER,
+  client_id      INTEGER,
+  amount         REAL NOT NULL DEFAULT 0,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS lookups (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL,
@@ -214,6 +295,9 @@ CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, create
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_verifications_phone ON phone_verifications(phone, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+CREATE INDEX IF NOT EXISTS idx_certificates_code ON certificates(code);
+CREATE INDEX IF NOT EXISTS idx_coupon_redemptions ON coupon_redemptions(coupon_id, created_at DESC);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -228,6 +312,14 @@ function ensureColumn(table, column, definition) {
 }
 
 ensureColumn('statuses', 'is_cancelled', 'is_cancelled INTEGER NOT NULL DEFAULT 0');
+/* Поля цены: сколько стоило по прайсу, сколько скинули и чем именно. */
+ensureColumn('bookings', 'list_price', 'list_price REAL');
+ensureColumn('bookings', 'discount_amount', 'discount_amount REAL NOT NULL DEFAULT 0');
+ensureColumn('bookings', 'discount_id', 'discount_id INTEGER');
+ensureColumn('bookings', 'coupon_id', 'coupon_id INTEGER');
+ensureColumn('bookings', 'coupon_code', 'coupon_code TEXT');
+ensureColumn('bookings', 'certificate_id', 'certificate_id INTEGER');
+ensureColumn('bookings', 'certificate_code', 'certificate_code TEXT');
 
 export const DEFAULT_SETTINGS = {
   siteName: 'xenon.studio',

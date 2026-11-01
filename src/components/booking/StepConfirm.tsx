@@ -1,13 +1,21 @@
 import { Mail, MessageSquare, Pencil, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { CodeInput } from './CodeInput';
 import { BookingSummary } from './BookingSummary';
-import type { BookingDraft, BookingFormOptions } from '../../types';
+import type { BookingDraft, BookingFormOptions, PriceQuote } from '../../types';
 
 export function StepConfirm({
   options,
   draft,
   item,
   totals,
+  quote,
+  promoInput,
+  promoCode,
+  promoError,
+  promoBusy,
+  onPromoInput,
+  onApplyPromo,
+  onClearPromo,
   requireVerification,
   code,
   onCode,
@@ -28,6 +36,14 @@ export function StepConfirm({
     total: number;
     lines: { addon: { id: string; name: string }; total: number; qty: number }[];
   };
+  quote: PriceQuote | null;
+  promoInput: string;
+  promoCode: string;
+  promoError: string | null;
+  promoBusy: boolean;
+  onPromoInput: (value: string) => void;
+  onApplyPromo: () => void;
+  onClearPromo: () => void;
   requireVerification: boolean;
   code: string;
   onCode: (value: string) => void;
@@ -102,7 +118,20 @@ export function StepConfirm({
         </div>
       )}
 
-      <BookingSummary options={options} draft={draft} item={item} totals={totals} />
+      <BookingSummary
+        options={options}
+        draft={draft}
+        item={item}
+        totals={totals}
+        quote={quote}
+        promoInput={promoInput}
+        promoCode={promoCode}
+        promoError={promoError}
+        promoBusy={promoBusy}
+        onPromoInput={onPromoInput}
+        onApplyPromo={onApplyPromo}
+        onClearPromo={onClearPromo}
+      />
     </div>
   );
 }

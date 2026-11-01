@@ -47,6 +47,7 @@ export function monthDays(month) {
 
 const SUMMARY_SELECT = `
   SELECT b.id, b.public_code, b.starts_at, b.duration_min, b.price, b.addons, b.notes, b.gallery_url,
+         b.list_price, b.discount_amount, b.coupon_code, b.certificate_code,
          b.created_at, b.updated_at,
          c.id AS client_id, c.name AS client_name, c.phone, c.email,
          c.telegram_username, c.instagram,
@@ -79,6 +80,10 @@ export function mapBooking(row) {
     localDate: toLocalDate(row.starts_at),
     duration: row.duration_min,
     price: row.price,
+    listPrice: row.list_price === null || row.list_price === undefined ? row.price : row.list_price,
+    discountAmount: Math.round(Number(row.discount_amount) || 0),
+    promoCode: row.coupon_code || row.certificate_code || null,
+    promoType: row.coupon_code ? 'coupon' : row.certificate_code ? 'certificate' : null,
     addons: parseAddons(row.addons),
     notes: row.notes,
     galleryUrl: row.gallery_url,

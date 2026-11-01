@@ -685,3 +685,138 @@ export interface NotificationFeedPayload {
   counts: { all: number; unread: number; byKind: Record<string, number> };
   badges: Badges;
 }
+
+/* ------------------------------ маркетинг ------------------------------ */
+
+export type DiscountKind = 'percent' | 'fixed';
+export type DiscountStatus = 'active' | 'off' | 'scheduled' | 'expired';
+export type DiscountAudience = 'all' | 'vip' | 'repeat' | 'new';
+
+export interface DiscountItem {
+  id: number;
+  name: string;
+  kind: DiscountKind;
+  value: number;
+  scope: 'all' | 'service' | 'package';
+  itemIds: number[];
+  minAmount: number;
+  audience: DiscountAudience;
+  auto: boolean;
+  stackable: boolean;
+  priority: number;
+  startsOn: string | null;
+  endsOn: string | null;
+  isActive: boolean;
+  usedCount: number;
+  note: string | null;
+  status: DiscountStatus;
+  applied: number;
+  coupons: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DiscountListPayload {
+  items: DiscountItem[];
+  counts: { all: number; active: number; off: number; saved: number };
+}
+
+export interface CouponItem {
+  id: number;
+  code: string;
+  title: string | null;
+  kind: DiscountKind;
+  value: number;
+  discountId: number | null;
+  discountName: string | null;
+  limitTotal: number;
+  limitPerClient: number;
+  usedCount: number;
+  minAmount: number;
+  startsOn: string | null;
+  endsOn: string | null;
+  isActive: boolean;
+  note: string | null;
+  status: 'active' | 'off' | 'expired' | 'exhausted' | 'scheduled';
+  saved: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CouponListPayload {
+  items: CouponItem[];
+  counts: { all: number; active: number; used: number; exhausted: number };
+  status: string;
+  total: number;
+}
+
+export interface CertificateRedemption {
+  id: number;
+  amount: number;
+  createdAt: string | null;
+  code: string | null;
+  startsAt: string | null;
+}
+
+export interface CertificateItem {
+  id: number;
+  code: string;
+  kind: 'amount' | 'service';
+  amount: number;
+  remaining: number;
+  spent: number;
+  serviceId: number | null;
+  serviceName: string | null;
+  recipient: string | null;
+  phone: string | null;
+  email: string | null;
+  clientId: number | null;
+  purchasedAt: string | null;
+  expiresAt: string | null;
+  status: 'active' | 'used' | 'expired' | 'blocked';
+  note: string | null;
+  history: CertificateRedemption[];
+  createdAt: string | null;
+}
+
+export interface CertificateListPayload {
+  items: CertificateItem[];
+  counts: { all: number; active: number; used: number; expired: number; balance: number };
+  status: string;
+  total: number;
+  today: string;
+}
+
+export interface MarketingOverview {
+  month: string;
+  saved: number;
+  discounts: DiscountListPayload['counts'];
+  coupons: CouponListPayload['counts'];
+  certificates: CertificateListPayload['counts'];
+  issued: number;
+  topCoupons: { id: number; code: string; usedCount: number; saved: number }[];
+}
+
+export interface PriceQuote {
+  item: { kind: 'service' | 'package'; id: number; name: string; price: number; duration: number } | null;
+  lines: { id: string; name: string; qty: number; total: number }[];
+  base: number;
+  extras: number;
+  subtotal: number;
+  discount: { source: string; id: number | null; name: string; kind: DiscountKind; value: number; amount: number } | null;
+  discountAlternatives: { source: string; id: number | null; name: string; amount: number }[];
+  discountTotal: number;
+  promo: {
+    type: 'coupon' | 'certificate';
+    id: number;
+    code: string;
+    label: string;
+    kind?: DiscountKind;
+    value?: number;
+    amount: number;
+  } | null;
+  promoError: string | null;
+  afterDiscount: number;
+  total: number;
+  today: string;
+}

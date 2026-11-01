@@ -59,7 +59,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Megaphone,
     children: [
       { key: 'discounts', label: 'Скидки', path: '/admin/marketing/discounts' },
-      { key: 'coupons', label: 'Купоны', path: '/admin/marketing/coupons' },
+      { key: 'coupons', label: 'Промокоды', path: '/admin/marketing/coupons' },
       { key: 'certificates', label: 'Сертификаты', path: '/admin/marketing/certificates' },
       { key: 'bonuses', label: 'Бонусы / Рефералы', path: '/admin/marketing/bonuses' }
     ]
@@ -138,7 +138,7 @@ export const ROUTE_META: Record<string, RouteMeta> = {
   '/admin/landing': { title: 'Мини-лендинг' },
   '/admin/marketing': { title: 'Маркетинг', group: 'Маркетинг' },
   '/admin/marketing/discounts': { title: 'Скидки', group: 'Маркетинг' },
-  '/admin/marketing/coupons': { title: 'Купоны', group: 'Маркетинг' },
+  '/admin/marketing/coupons': { title: 'Промокоды', group: 'Маркетинг' },
   '/admin/marketing/certificates': { title: 'Сертификаты', group: 'Маркетинг' },
   '/admin/marketing/bonuses': { title: 'Бонусы / Рефералы', group: 'Маркетинг' },
   '/admin/settings': { title: 'Настройки', group: 'Настройки' },

@@ -188,7 +188,7 @@ export const SECTIONS: Record<string, SectionInfo> = {
     title: 'Скидки',
     eyebrow: 'Маркетинг',
     description:
-      'Гибкие правила скидок: процент или фиксированная сумма, период действия или лимит использований, выбор услуг и правила сочетания.',
+      'Гибкие правила скидок: процент или фиксированная сумма, период действия, привязка к услугам и правила сочетания с промокодами.',
     icon: BadgePercent,
     features: [
       'Скидка в процентах или сумме',
@@ -198,12 +198,12 @@ export const SECTIONS: Record<string, SectionInfo> = {
       'Минимальная сумма заказа'
     ],
     links: [
-      { label: 'Купоны', path: '/admin/marketing/coupons' },
+      { label: 'Промокоды', path: '/admin/marketing/coupons' },
       { label: 'Сертификаты', path: '/admin/marketing/certificates' }
     ]
   },
   coupons: {
-    title: 'Купоны',
+    title: 'Промокоды',
     eyebrow: 'Маркетинг',
     description:
       'Промокоды с процентом или суммой, сроком действия и лимитом использований. Клиент вводит код на шаге подтверждения записи.',

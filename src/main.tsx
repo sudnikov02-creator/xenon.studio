@@ -11,6 +11,7 @@ import './styles/booking.css';
 import './styles/bookings.css';
 import './styles/client.css';
 import './styles/statuses.css';
+import './styles/clients.css';
 import { App } from './app/App';
 
 const container = document.getElementById('root');

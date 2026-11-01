@@ -679,6 +679,38 @@
   transition: background var(--t) var(--ease);
 }
 .auth__demo button:hover { background: var(--accent-soft); }
+.auth__setup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--accent) 72%, #0b1220);
+  animation: fade-up 0.35s var(--ease-out);
+}
+.auth__setup-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+  animation: setup-pulse 2.2s var(--ease) infinite;
+}
+@keyframes setup-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
 .auth__foot {
   margin-top: 26px;
   padding-top: 18px;

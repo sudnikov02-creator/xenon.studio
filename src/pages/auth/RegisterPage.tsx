@@ -62,7 +62,15 @@ export function RegisterPage() {
   return (
     <AuthShell>
       <h2 className="auth__form-title">Создание студии</h2>
-      <p className="auth__form-sub">Один аккаунт для фотографа. Клиенты регистрироваться не будут.</p>
+      <p className="auth__form-sub">
+        Первый запуск: база данных создаётся автоматически, осталось завести аккаунт фотографа. Клиенты
+        регистрироваться не будут — они записываются по ссылке.
+      </p>
+
+      <div className="auth__setup">
+        <span className="auth__setup-dot" aria-hidden />
+        Настройки, расписание и статусы появятся сразу после регистрации
+      </div>
 
       <form onSubmit={onSubmit} noValidate>
         {error && (

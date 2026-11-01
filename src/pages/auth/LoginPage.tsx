@@ -23,6 +23,8 @@ export function LoginPage() {
   const from = (location.state as { from?: string } | null)?.from || '/admin';
 
   if (status === 'ready' && user) return <Navigate to={from} replace />;
+  // Фотографа в базе ещё нет — сначала создаём студию, вход появится после регистрации.
+  if (status === 'ready' && !hasAccount) return <Navigate to="/register" replace />;
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -50,7 +52,9 @@ export function LoginPage() {
     <AuthShell>
       <h2 className="auth__form-title">Вход в студию</h2>
       <p className="auth__form-sub">
-        {branding.photographerName ? `${branding.photographerName}, введите данные доступа.` : 'Введите данные доступа фотографа.'}
+        {branding.photographerName
+          ? `${branding.photographerName}, введите данные доступа.`
+          : 'Введите данные доступа фотографа.'}
       </p>
 
       <form onSubmit={onSubmit} noValidate>
@@ -137,9 +141,7 @@ export function LoginPage() {
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <Lock style={{ width: 13, height: 13 }} /> Доступ только для фотографа
         </span>
-        {!hasAccount && status === 'ready' && (
-          <Link to="/register">Создать студию</Link>
-        )}
+        <Link to="/register">Создать студию</Link>
       </div>
     </AuthShell>
   );

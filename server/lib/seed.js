@@ -27,8 +27,21 @@ function hasData() {
   return users > 0 || settings > 0;
 }
 
+/**
+ * Демо-студия с примерами записей — только для разработки и предпросмотра.
+ * На боевом сервере база поднимается пустой: приложение само создаёт схему,
+ * а фотограф проходит регистрацию при первом запуске.
+ * XENON_SEED=demo — включить демо принудительно, XENON_SEED=0 — выключить.
+ */
+export function demoSeedEnabled() {
+  const flag = String(process.env.XENON_SEED || '').toLowerCase();
+  if (flag === '0' || flag === 'off' || flag === 'false') return false;
+  if (flag === 'demo' || flag === '1' || flag === 'true' || flag === 'on') return true;
+  return process.env.NODE_ENV !== 'production';
+}
+
 export function ensureSeed() {
-  if (process.env.XENON_SEED === '0') return false;
+  if (!demoSeedEnabled()) return false;
   if (hasData()) return false;
 
   const now = new Date().toISOString();

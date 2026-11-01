@@ -10,7 +10,8 @@ import {
   destroySession,
   rateLimit
 } from '../lib/auth.js';
-import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/seed.js';
+import { DEMO_EMAIL, DEMO_PASSWORD, demoSeedEnabled } from '../lib/seed.js';
+import { bootstrapStudio, hasPhotographer } from '../lib/studio-bootstrap.js';
 
 const router = express.Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -33,17 +34,19 @@ function publicUser(user) {
 
 router.get('/status', (req, res) => {
   const user = currentUser(req);
-  const hasAccount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
+  const hasAccount = hasPhotographer();
+  const demo = demoSeedEnabled() && process.env.XENON_DEMO !== '0';
   res.json({
     hasAccount,
+    needsSetup: !hasAccount,
     authenticated: Boolean(user),
     user: user ? publicUser(user) : null,
-    demoHint: process.env.XENON_DEMO === '0' ? null : { email: DEMO_EMAIL, password: DEMO_PASSWORD }
+    demoHint: demo ? { email: DEMO_EMAIL, password: DEMO_PASSWORD } : null
   });
 });
 
 router.post('/register', (req, res) => {
-  const hasAccount = db.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
+  const hasAccount = hasPhotographer();
   if (hasAccount) {
     return res.status(409).json({ error: 'account_exists', message: 'Аккаунт уже создан. Войдите в систему.' });
   }
@@ -59,10 +62,18 @@ router.post('/register', (req, res) => {
   }
 
   const hash = bcrypt.hashSync(String(password), 10);
+  const cleanName = String(name).trim();
+  const cleanEmail = String(email).trim().toLowerCase();
   const info = db
     .prepare('INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)')
-    .run(String(email).trim().toLowerCase(), hash, String(name).trim());
+    .run(cleanEmail, hash, cleanName);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+  // Новая студия получает настройки и базовую цепочку статусов — всё создаётся само.
+  try {
+    bootstrapStudio({ photographerName: cleanName });
+  } catch (err) {
+    console.error('[bootstrap] failed', err);
+  }
   const { token, expires } = createSession(user.id, req);
   res.cookie(SESSION_COOKIE, token, sessionCookieOptions(req, expires));
   logActivity({ type: 'auth', title: 'Аккаунт фотографа создан', description: user.email, entity: 'user', entityId: user.id });

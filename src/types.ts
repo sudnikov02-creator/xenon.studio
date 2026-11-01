@@ -63,6 +63,7 @@ export interface StudioSettings extends Branding {
 
 export interface AuthStatusResponse {
   hasAccount: boolean;
+  needsSetup?: boolean;
   authenticated: boolean;
   user: User | null;
   demoHint: { email: string; password: string } | null;
@@ -536,4 +537,80 @@ export interface StatusDraft {
   isCancelled: boolean;
   clientCanReschedule: boolean;
   clientCanCancel: boolean;
+}
+
+/* ------------------------------ клиенты ------------------------------ */
+
+export type ClientSegment = 'all' | 'vip' | 'active' | 'new' | 'sleeping' | 'lead' | 'blacklist';
+export type ClientBucket = Exclude<ClientSegment, 'all'> | 'regular';
+export type ClientSort = 'recent' | 'created' | 'spent' | 'bookings' | 'name';
+
+export interface ClientItem {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  telegram: string | null;
+  instagram: string | null;
+  notes: string | null;
+  tags: string[];
+  isVip: boolean;
+  isBlacklisted: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+  bookings: number;
+  spent: number;
+  avgCheck: number;
+  lastVisit: string | null;
+  lastVisitDate: string | null;
+  nextVisit: string | null;
+  nextVisitDate: string | null;
+  hasUpcoming: boolean;
+  segment: ClientBucket;
+}
+
+export interface ClientListPayload {
+  items: ClientItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  segment: string;
+  sort: string;
+  counts: Record<ClientSegment | 'regular', number>;
+}
+
+export interface ClientBookingRow {
+  id: number;
+  code: string;
+  startsAt: string;
+  localDate: string;
+  duration: number;
+  price: number;
+  source: string;
+  service: string;
+  status: { name: string; color: string; isCancelled: boolean; isFinal: boolean } | null;
+}
+
+export interface ClientDetailPayload {
+  client: ClientItem;
+  bookings: ClientBookingRow[];
+  stats: {
+    total: number;
+    cancelled: number;
+    upcoming: number;
+    firstVisit: string | null;
+    services: string[];
+  };
+  today: string;
+}
+
+export interface ClientDraft {
+  name: string;
+  phone: string;
+  email: string;
+  telegram: string;
+  instagram: string;
+  notes: string;
+  tags: string[];
 }

@@ -24,6 +24,7 @@ const DEFAULT_BRANDING: Branding = {
   currencyCode: 'RUB',
   decimalSeparator: 'comma',
   locale: 'ru',
+  contacts: { phone: '', telegram: '', instagram: '', email: '' },
   landingEnabled: false,
   seo: { title: 'xenon.studio', description: '', ogImage: null }
 };
@@ -52,6 +53,7 @@ function extractBranding(settings: StudioSettings, base: Branding): Branding {
     currencyCode: settings.currencyCode,
     decimalSeparator: settings.decimalSeparator,
     locale: settings.locale,
+    contacts: settings.contacts || base.contacts,
     landingEnabled: settings.landingEnabled,
     seo: settings.seo
   };

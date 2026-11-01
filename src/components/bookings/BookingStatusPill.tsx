@@ -2,12 +2,15 @@ import type { CSSProperties } from 'react';
 import { cn } from '../../lib/utils';
 import type { BookingStatusInfo, BookingStatus } from '../../types';
 
+type PillStatus = { name: string; color: string };
+
+
 export function BookingStatusPill({
   status,
   size = 'md',
   className
 }: {
-  status: BookingStatus | BookingStatusInfo | null;
+  status: PillStatus | BookingStatus | BookingStatusInfo | null;
   size?: 'sm' | 'md';
   className?: string;
 }) {

@@ -23,6 +23,13 @@ export interface NotificationItem {
   createdAt: string;
 }
 
+export interface StudioContacts {
+  phone: string;
+  telegram: string;
+  instagram: string;
+  email: string;
+}
+
 export interface Branding {
   siteName: string;
   photographerName: string;
@@ -35,6 +42,7 @@ export interface Branding {
   currencyCode: string;
   decimalSeparator: 'comma' | 'dot';
   locale: string;
+  contacts: StudioContacts;
   landingEnabled: boolean;
   seo: { title: string; description: string; ogImage: string | null };
 }
@@ -422,3 +430,74 @@ export interface BookingMonthPayload {
 }
 
 export type BookingPeriod = 'all' | 'today' | 'week' | 'month' | 'upcoming' | 'past';
+
+/* ---------------------- клиентская страница записи ---------------------- */
+
+export interface ClientBookingStatus {
+  name: string;
+  color: string;
+  isFinal: boolean;
+  isCancelled: boolean;
+  order: number;
+}
+
+export interface ClientBookingPermissions {
+  canReschedule: boolean;
+  canCancel: boolean;
+  rescheduleReason: string | null;
+  cancelReason: string | null;
+  hoursLeft: number;
+  minNoticeHours: number;
+  lateCancel: boolean;
+}
+
+export interface ClientBookingStudio {
+  siteName: string;
+  photographerName: string;
+  brandTagline: string;
+  logoUrl: string | null;
+  timezone: string;
+  currencySymbol: string;
+  decimalSeparator: 'comma' | 'dot';
+  contacts: { phone: string; telegram: string; instagram: string; email: string };
+}
+
+export interface ClientBookingView {
+  code: string;
+  today: string;
+  booking: {
+    code: string;
+    startsAt: string;
+    localDate: string;
+    localTime: string;
+    duration: number;
+    price: number;
+    addons: { id: string; name: string; price: number; type?: string; qty?: number }[];
+    clientNote: string | null;
+    galleryUrl: string | null;
+    createdAt: string | null;
+  };
+  client: { name: string; phone: string | null; instagram: string | null };
+  status: ClientBookingStatus | null;
+  service: { name: string; description: string | null } | null;
+  package: { name: string; services: { name: string; duration: number }[] } | null;
+  events: BookingEventItem[];
+  permissions: ClientBookingPermissions;
+  studio: ClientBookingStudio;
+  agreement: { enabled: boolean; text: string };
+  schedule: { minNoticeHours: number; horizonDays: number; accepting: boolean; stepMin: number };
+}
+
+export interface ClientMonthPayload {
+  month: string;
+  days: Record<string, { count: number; first: string; last: string }>;
+  today: string;
+}
+
+export interface ClientSlotsPayload {
+  date: string;
+  slots: { time: string; iso: string }[];
+  duration: number;
+  current: string;
+  currentLocal: string;
+}

@@ -213,7 +213,7 @@ export function bookingDetail(id) {
   const events = db
     .prepare(
       `SELECT id, type, title, message, actor, created_at
-       FROM booking_events WHERE booking_id = ? ORDER BY created_at ASC, id ASC`
+       FROM booking_events WHERE booking_id = ? ORDER BY datetime(created_at) ASC, id ASC`
     )
     .all(row.id)
     .map((event) => ({

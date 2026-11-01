@@ -1,7 +1,7 @@
 import express from 'express';
 import { db, logActivity } from '../db.js';
 import { requireAuth } from '../lib/auth.js';
-import { broadcast, broadcastBadges } from '../lib/sse.js';
+import { broadcast, broadcastBadges, broadcastBookingUpdate } from '../lib/sse.js';
 import { getBookingById } from '../lib/bookings.js';
 import { createBooking } from '../lib/booking-create.js';
 import { getSettings } from '../db.js';
@@ -115,6 +115,7 @@ router.patch('/:id(\\d+)', requireAuth, (req, res) => {
   const result = updateNotes(Number(req.params.id), req.body || {});
   if (result.status === 200) {
     broadcast('booking', { id: Number(req.params.id), action: 'updated' });
+    broadcastBookingUpdate(Number(req.params.id), { action: 'updated' });
   }
   res.status(result.status).json(result.body);
 });
@@ -123,6 +124,7 @@ router.post('/:id(\\d+)/status', requireAuth, (req, res) => {
   const result = changeStatus(Number(req.params.id), req.body?.statusId, req.body?.comment);
   if (result.status === 200) {
     broadcast('booking', { id: Number(req.params.id), action: 'status' });
+    broadcastBookingUpdate(Number(req.params.id), { action: 'status' });
     broadcastBadges();
   }
   res.status(result.status).json(result.body);
@@ -132,6 +134,7 @@ router.post('/:id(\\d+)/reschedule', requireAuth, (req, res) => {
   const result = rescheduleBooking(Number(req.params.id), req.body || {});
   if (result.status === 200) {
     broadcast('booking', { id: Number(req.params.id), action: 'reschedule' });
+    broadcastBookingUpdate(Number(req.params.id), { action: 'reschedule' });
   }
   res.status(result.status).json(result.body);
 });
@@ -140,6 +143,7 @@ router.post('/:id(\\d+)/cancel', requireAuth, (req, res) => {
   const result = cancelBooking(Number(req.params.id), req.body?.comment);
   if (result.status === 200) {
     broadcast('booking', { id: Number(req.params.id), action: 'cancelled' });
+    broadcastBookingUpdate(Number(req.params.id), { action: 'cancelled' });
     broadcastBadges();
   }
   res.status(result.status).json(result.body);
@@ -206,6 +210,7 @@ router.post('/:id/accept', requireAuth, (req, res) => {
   commit();
 
   broadcast('booking', { id: booking.id, action: 'accepted', status: next.name });
+  broadcastBookingUpdate(booking.id, { action: 'accepted' });
   broadcastBadges();
 
   res.json({ booking: getBookingById(booking.id) });
@@ -240,6 +245,7 @@ router.post('/:id/decline', requireAuth, (req, res) => {
   commit();
 
   broadcast('booking', { id: booking.id, action: 'declined' });
+  broadcastBookingUpdate(booking.id, { action: 'declined' });
   broadcastBadges();
 
   res.json({ booking: getBookingById(booking.id) });

@@ -17,7 +17,7 @@ type RequestOptions = {
   credentials?: RequestCredentials;
 };
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+async function request<T>(path: string, options: RequestOptions = {}, retried = false): Promise<T> {
   const { method = 'GET', body, signal } = options;
 
   let response: Response;
@@ -38,8 +38,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const payload = contentType.includes('application/json') ? await response.json().catch(() => null) : null;
 
   if (!response.ok) {
+    /* 401 от рабочих запросов не всегда значит «вы разлогинены»: инстанс мог пересоздать базу.
+       Сначала перепроверяем сессию и один раз повторяем запрос — из кабинета не выкидываем зря. */
     if (response.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/status')) {
-      window.dispatchEvent(new CustomEvent('xenon:unauthorized'));
+      const alive = !retried && (await sessionAlive());
+      if (alive) return request<T>(path, options, true);
+      if (!alive) window.dispatchEvent(new CustomEvent('xenon:unauthorized'));
     }
     const code = (payload && (payload.error as string)) || 'request_failed';
     const message = (payload && (payload.message as string)) || 'Не удалось выполнить запрос';
@@ -47,6 +51,18 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   return payload as T;
+}
+
+/* Проверяем сессию отдельным запросом, чтобы отличить протухшую cookie от сбоя инстанса. */
+async function sessionAlive(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/auth/status', { credentials: 'same-origin' });
+    if (!response.ok) return false;
+    const payload = (await response.json()) as { authenticated?: boolean };
+    return payload.authenticated === true;
+  } catch {
+    return true;
+  }
 }
 
 export const api = {

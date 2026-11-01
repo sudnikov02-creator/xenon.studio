@@ -5,16 +5,49 @@ import { badges, broadcast, broadcastBadges } from '../lib/sse.js';
 
 const router = express.Router();
 
+const KINDS = ['booking', 'message', 'review', 'system'];
+
 router.get('/', requireAuth, (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 20, 60);
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const filter = req.query.filter === 'unread' ? 'unread' : 'all';
+  const kind = KINDS.includes(String(req.query.kind)) ? String(req.query.kind) : null;
+
+  const where = [];
+  const params = [];
+  if (kind) {
+    where.push('kind = ?');
+    params.push(kind);
+  }
+  if (filter === 'unread') where.push('is_read = 0');
+  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM notifications ${clause}`).get(...params).n;
   const items = db
     .prepare(
       `SELECT id, kind, title, subtitle, action_label AS actionLabel, action_url AS actionUrl,
               is_read AS isRead, created_at AS createdAt
-       FROM notifications ORDER BY datetime(created_at) DESC, id DESC LIMIT ?`
+       FROM notifications ${clause} ORDER BY datetime(created_at) DESC, id DESC LIMIT ? OFFSET ?`
     )
-    .all(limit);
-  res.json({ items, badges: badges() });
+    .all(...params, limit, (page - 1) * limit);
+
+  const unreadRow = db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE is_read = 0').get();
+  const byKind = {};
+  for (const row of db.prepare('SELECT kind, COUNT(*) AS n FROM notifications GROUP BY kind').all()) {
+    byKind[row.kind] = row.n;
+  }
+
+  res.json({
+    items,
+    page,
+    limit,
+    total,
+    hasMore: page * limit < total,
+    filter,
+    kind: kind || 'all',
+    counts: { all: db.prepare('SELECT COUNT(*) AS n FROM notifications').get().n, unread: unreadRow.n, byKind },
+    badges: badges()
+  });
 });
 
 router.post('/:id/read', requireAuth, (req, res) => {

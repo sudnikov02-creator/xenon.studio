@@ -21,6 +21,7 @@ import bookingFormRoutes from './routes/booking-form.js';
 import bookingPageRoutes from './routes/booking-page.js';
 import statusesRoutes from './routes/statuses.js';
 import clientsRoutes from './routes/clients.js';
+import messagesRoutes from './routes/messages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, '..', 'dist');
@@ -71,6 +72,7 @@ export function createApp({ serveStatic = true } = {}) {
   app.use('/api/bookings', bookingRoutes);
   app.use('/api/statuses', statusesRoutes);
   app.use('/api/clients', clientsRoutes);
+  app.use('/api/messages', messagesRoutes);
   app.use('/api', servicesRoutes);
   app.use('/api', realtimeRoutes);
 

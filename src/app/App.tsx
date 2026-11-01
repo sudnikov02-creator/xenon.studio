@@ -28,6 +28,12 @@ const ClientsPage = lazy(() => import('../pages/admin/ClientsPage').then((m) => 
 const MessagesPage = lazy(() => import('../pages/admin/MessagesPage').then((m) => ({ default: m.MessagesPage })));
 const DiscountsPage = lazy(() => import('../pages/admin/DiscountsPage').then((m) => ({ default: m.DiscountsPage })));
 const CouponsPage = lazy(() => import('../pages/admin/CouponsPage').then((m) => ({ default: m.CouponsPage })));
+const NotificationsSettingsPage = lazy(() =>
+  import('../pages/admin/NotificationsSettingsPage').then((m) => ({ default: m.NotificationsSettingsPage }))
+);
+const AutomationSettingsPage = lazy(() =>
+  import('../pages/admin/AutomationSettingsPage').then((m) => ({ default: m.AutomationSettingsPage }))
+);
 const BonusesPage = lazy(() => import('../pages/admin/BonusesPage').then((m) => ({ default: m.BonusesPage })));
 const CertificatesPage = lazy(() =>
   import('../pages/admin/CertificatesPage').then((m) => ({ default: m.CertificatesPage }))
@@ -52,9 +58,7 @@ function GuestOnly({ children }: { children: ReactNode }) {
 }
 
 const SETTINGS_ROUTES: { path: string; section: string }[] = [
-  { path: 'settings/notifications', section: 'notifications' },
   { path: 'settings/currency', section: 'currency' },
-  { path: 'settings/automation', section: 'automation' },
   { path: 'settings/agreement', section: 'agreement' },
   { path: 'settings/seo', section: 'seo' },
   { path: 'settings/appearance', section: 'appearance' },
@@ -123,6 +127,8 @@ export function App() {
                     <Route path="marketing/coupons" element={<CouponsPage />} />
                     <Route path="marketing/certificates" element={<CertificatesPage />} />
                     <Route path="marketing/bonuses" element={<BonusesPage />} />
+                    <Route path="settings/notifications" element={<NotificationsSettingsPage />} />
+                    <Route path="settings/automation" element={<AutomationSettingsPage />} />
                     {SECTION_ROUTES.map((route) => (
                       <Route
                         key={route.path}

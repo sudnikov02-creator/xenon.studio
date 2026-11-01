@@ -480,6 +480,105 @@ export function ensureSeed() {
     insertReferral.run(clientIds[6], null, 'Григорий Морозов', null, refCodes[6], 'rewarded', 1000, 500, iso(-40, 12, 0), null, iso(-52, 12, 0), iso(-40, 12, 0));
     insertReferral.run(clientIds[5], null, 'Артём Волков', '+375 25 771-18-04', refCodes[5], 'cancelled', 1000, 500, null, 'Отменил съёмку', iso(-22, 12, 0), iso(-15, 12, 0));
 
+    /* автоматизация: шаблоны и сценарии */
+    const insertRule = db.prepare(
+      `INSERT INTO automations (name, trigger, params, conditions, action, action_params, is_active, runs, last_run_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const rules = [
+      [
+        'Письмо после заявки',
+        'booking_created',
+        {},
+        {},
+        'message',
+        { templateKey: 'booking_created' },
+        1,
+        12,
+        iso(-1, 9, 0)
+      ],
+      [
+        'Подтверждение записи',
+        'status_changed',
+        { statusId: 2 },
+        {},
+        'message',
+        { templateKey: 'booking_confirmed' },
+        1,
+        8,
+        iso(-2, 11, 0)
+      ],
+      [
+        'Напоминание за сутки',
+        'before_shoot',
+        { hours: 24 },
+        { minAmount: 0 },
+        'message',
+        { templateKey: 'booking_reminder' },
+        1,
+        21,
+        iso(0, 8, 0)
+      ],
+      [
+        'Спасибо после съёмки',
+        'after_shoot',
+        { days: 1 },
+        {},
+        'message',
+        { templateKey: 'booking_done' },
+        1,
+        16,
+        iso(-1, 18, 0)
+      ],
+      [
+        'Метка «Постоянный» после трёх съёмок',
+        'after_shoot',
+        { days: 3 },
+        { minAmount: 5000 },
+        'tag',
+        { tag: 'Постоянный' },
+        0,
+        0,
+        null
+      ],
+      [
+        'Возврат спящих клиентов',
+        'no_visits',
+        { days: 60 },
+        {},
+        'message',
+        { templateKey: 'winback' },
+        1,
+        3,
+        iso(-12, 10, 0)
+      ]
+    ];
+    rules.forEach(([name, trigger, params, conditions, action, actionParams, active, runs, lastRun]) => {
+      insertRule.run(
+        name,
+        trigger,
+        JSON.stringify(params),
+        JSON.stringify(conditions),
+        action,
+        JSON.stringify(actionParams),
+        active,
+        runs,
+        lastRun,
+        iso(-40, 10, 0),
+        iso(-5, 10, 0)
+      );
+    });
+
+    const insertRun = db.prepare(
+      `INSERT INTO automation_log (automation_id, booking_id, client_id, status, message, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    );
+    insertRun.run(1, 2, 2, 'ok', 'Письмо после заявки: «Заявка получена» → Telegram', iso(-1, 9, 5));
+    insertRun.run(2, 4, 1, 'ok', 'Подтверждение записи: «Запись подтверждена» → Telegram', iso(-2, 11, 12));
+    insertRun.run(3, 5, 4, 'ok', 'Напоминание за сутки: «Напоминание о съёмке» → Telegram', iso(0, 8, 0));
+    insertRun.run(4, 3, 3, 'ok', 'Спасибо после съёмки: «Спасибо за съёмку» → Telegram', iso(-1, 18, 30));
+    insertRun.run(6, null, 8, 'skipped', 'Возврат спящих клиентов: у клиента нет Telegram', iso(-12, 10, 0));
+
     /* activity log */
     const activity = [
       ['booking', 'Новая заявка от Марии Лебедевой', 'Love story · сегодня, 15:30', 'booking', 2],

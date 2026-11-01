@@ -13,6 +13,7 @@ import {
 } from '../lib/verification.js';
 import { createBooking } from '../lib/booking-create.js';
 import { quote } from '../lib/pricing.js';
+import { handleEvent } from '../lib/automation.js';
 
 const router = express.Router();
 
@@ -208,6 +209,13 @@ router.post('/booking', (req, res) => {
     source: 'client',
     verificationToken: req.body?.verificationToken
   });
+  if (result.status === 201 && result.body?.booking?.id) {
+    try {
+      handleEvent('booking_created', { bookingId: result.body.booking.id });
+    } catch (err) {
+      console.error('[automation] booking_created:', err?.message || err);
+    }
+  }
   res.status(result.status).json(result.body);
 });
 

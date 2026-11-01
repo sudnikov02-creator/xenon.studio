@@ -4,6 +4,8 @@ export interface User {
   email: string;
   lastLoginAt?: string | null;
   createdAt?: string;
+  /** Пароль неизвестен: студия восстановлена после перезапуска сервера. */
+  needsPassword?: boolean;
 }
 
 export interface Badges {
@@ -613,4 +615,73 @@ export interface ClientDraft {
   instagram: string;
   notes: string;
   tags: string[];
+}
+
+/* ------------------------------ сообщения ------------------------------ */
+
+export type MessageChannel = 'telegram' | 'email' | 'whatsapp' | 'sms';
+export type MessageDirection = 'in' | 'out' | 'system';
+
+export interface ChatMessage {
+  id: number;
+  direction: MessageDirection;
+  kind: string;
+  channel: MessageChannel;
+  body: string;
+  subject: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface ChatClient {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  telegram: string | null;
+  instagram: string | null;
+  isVip: boolean;
+  isBlacklisted: boolean;
+}
+
+export interface ConversationSummary {
+  id: number;
+  clientId: number;
+  client: ChatClient;
+  channel: MessageChannel;
+  unread: number;
+  total: number;
+  hasBooking: boolean;
+  lastMessage: Omit<ChatMessage, 'isRead'> | null;
+  lastMessageAt: string | null;
+}
+
+export interface ConversationListPayload {
+  items: ConversationSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  counts: { all: number; unread: number; unanswered: number };
+  filter: string;
+  today: string;
+}
+
+export interface ConversationDetailPayload {
+  conversation: ConversationSummary;
+  messages: ChatMessage[];
+  bookings: ClientBookingRow[];
+  today: string;
+}
+
+export interface NotificationFeedPayload {
+  items: NotificationItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  filter: 'all' | 'unread';
+  kind: string;
+  counts: { all: number; unread: number; byKind: Record<string, number> };
+  badges: Badges;
 }

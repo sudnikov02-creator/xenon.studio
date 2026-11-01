@@ -108,7 +108,7 @@ export function ProfilePage() {
     }
     setSavingPassword(true);
     try {
-      await api.post('/auth/password', { currentPassword, newPassword });
+      await api.post('/auth/password', user?.needsPassword ? { newPassword } : { currentPassword, newPassword });
       toast({ title: 'Пароль изменён', subtitle: 'Войдите заново с новым паролем', variant: 'success' });
       await logout();
       navigate('/login', { replace: true });
@@ -285,6 +285,16 @@ export function ProfilePage() {
               </span>
             </div>
 
+            {user?.needsPassword && (
+              <div className="profile-notice" role="status">
+                <ShieldCheck />
+                <span>
+                  Студия восстановлена после перезапуска сервера — старый пароль больше не действует. Задайте
+                  новый, чтобы вход оставался под защитой.
+                </span>
+              </div>
+            )}
+
             {passwordError && (
               <div className="auth-alert" role="alert">
                 <AlertCircle />
@@ -292,7 +302,8 @@ export function ProfilePage() {
               </div>
             )}
 
-            <div className="form-row form-row--three">
+            <div className={`form-row${user?.needsPassword ? ' form-row--two' : ' form-row--three'}`}>
+              {!user?.needsPassword && (
               <label className="field">
                 <span className="field__label">Текущий пароль</span>
                 <input
@@ -305,6 +316,7 @@ export function ProfilePage() {
                   required
                 />
               </label>
+              )}
               <label className="field">
                 <span className="field__label">Новый пароль</span>
                 <input

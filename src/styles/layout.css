@@ -1148,6 +1148,7 @@
   gap: 14px;
 }
 .form-row--three { grid-template-columns: repeat(3, 1fr); }
+.form-row--two { grid-template-columns: repeat(2, 1fr); }
 .form-row--three .field__label { font-size: 12.5px; }
 .form-actions {
   display: flex;
@@ -1248,6 +1249,7 @@
 @media (max-width: 860px) {
   .form-row,
   .form-row--three { grid-template-columns: 1fr; }
+  .form-row--two { grid-template-columns: 1fr; }
   .form-actions { align-items: stretch; flex-direction: column-reverse; }
   .form-actions .btn { width: 100%; }
   .preview__hero { padding: 20px; }
@@ -1265,4 +1267,27 @@
 @media (max-width: 860px) {
   .page-skeleton { grid-template-columns: 1fr 1fr; gap: 10px; }
   .page-skeleton--two { grid-template-columns: 1fr; }
+}
+
+
+/* ------------------------------ восстановление студии ------------------------------ */
+
+.profile-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-bottom: 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--line));
+  background: var(--warning-soft);
+  color: color-mix(in srgb, var(--warning) 72%, #2b1a02);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.profile-notice svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 1px;
 }

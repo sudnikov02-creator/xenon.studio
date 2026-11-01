@@ -8,7 +8,8 @@ import {
   currentUser,
   requireAuth,
   destroySession,
-  rateLimit
+  rateLimit,
+  isRestoredPassword
 } from '../lib/auth.js';
 import { DEMO_EMAIL, DEMO_PASSWORD, demoSeedEnabled } from '../lib/seed.js';
 import { bootstrapStudio, hasPhotographer } from '../lib/studio-bootstrap.js';
@@ -28,7 +29,8 @@ function publicUser(user) {
     email: user.email,
     name: user.name,
     lastLoginAt: toIso(user.last_login_at),
-    createdAt: toIso(user.created_at)
+    createdAt: toIso(user.created_at),
+    needsPassword: isRestoredPassword(user.password_hash)
   };
 }
 
@@ -92,6 +94,12 @@ router.post('/login', (req, res) => {
     return res.status(422).json({ error: 'invalid_credentials', message: 'Введите email и пароль' });
   }
   const user = db.prepare('SELECT * FROM users WHERE lower(email) = lower(?)').get(String(email).trim());
+  if (user && isRestoredPassword(user.password_hash)) {
+    return res.status(409).json({
+      error: 'password_required',
+      message: 'Студия была восстановлена после перезапуска сервера — задайте новый пароль в профиле'
+    });
+  }
   if (!user || !bcrypt.compareSync(String(password), user.password_hash)) {
     return res.status(401).json({ error: 'invalid_credentials', message: 'Неверный email или пароль' });
   }
@@ -129,8 +137,11 @@ router.patch('/profile', requireAuth, (req, res) => {
 router.post('/password', requireAuth, (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
-  if (!currentPassword || !bcrypt.compareSync(String(currentPassword), user.password_hash)) {
-    return res.status(401).json({ error: 'invalid_password', message: 'Текущий пароль указан неверно' });
+  // После восстановления студии старый пароль неизвестен — разрешаем задать новый из сессии.
+  if (!isRestoredPassword(user.password_hash)) {
+    if (!currentPassword || !bcrypt.compareSync(String(currentPassword), user.password_hash)) {
+      return res.status(401).json({ error: 'invalid_password', message: 'Текущий пароль указан неверно' });
+    }
   }
   if (!newPassword || String(newPassword).length < 8) {
     return res.status(422).json({ error: 'weak_password', message: 'Новый пароль должен быть не короче 8 символов' });

@@ -1,6 +1,7 @@
 import { db, logActivity } from '../db.js';
 import { TZ_OFFSET_HOURS, getBookingById, localToday, mapBooking } from './bookings.js';
 import { collectItem, isoForLocal, localKeyOf, slotsForDate, isValidDateKey } from './slots.js';
+import { onBookingCompleted } from './loyalty.js';
 
 const TZ_MS = TZ_OFFSET_HOURS * 3600 * 1000;
 const MAX_COMMENT = 600;
@@ -298,6 +299,14 @@ export function changeStatus(id, statusId, comment) {
     });
   });
   commit();
+  /* Финальный статус — повод начислить бонусы и закрыть рекомендацию. */
+  if (next.is_final) {
+    try {
+      onBookingCompleted(booking.id);
+    } catch (err) {
+      console.error('[loyalty] не удалось начислить бонусы:', err?.message || err);
+    }
+  }
   return { status: 200, body: bookingDetail(booking.id), changed: 'status' };
 }
 
@@ -389,6 +398,10 @@ export function cancelBooking(id, comment) {
     });
   });
   commit();
+  db.prepare("UPDATE referrals SET status = 'cancelled', updated_at = ? WHERE booking_id = ? AND status = 'pending'").run(
+    now,
+    booking.id
+  );
   return { status: 200, body: bookingDetail(booking.id), changed: 'cancel' };
 }
 

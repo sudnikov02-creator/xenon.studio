@@ -71,6 +71,12 @@ router.get('/booking/options', (req, res) => {
     agreement: settings.agreement?.enabled
       ? { enabled: true, text: settings.agreement.text || '', consentText: settings.agreement.consentText || '' }
       : { enabled: false, text: '', consentText: '' },
+    loyalty: {
+      mode: settings.marketing?.mode === 'referral' ? 'referral' : 'bonus',
+      bonusEnabled: settings.marketing?.mode === 'bonus' && settings.marketing?.bonus?.enabled !== false,
+      redeemPercent: settings.marketing?.bonus?.redeemPercent || 0,
+      referralEnabled: settings.marketing?.mode === 'referral' && settings.marketing?.referral?.enabled !== false
+    },
     branding: {
       siteName: settings.siteName,
       photographerName: settings.photographerName,
@@ -173,7 +179,9 @@ router.post('/booking/quote', (req, res) => {
     addons: body.addons,
     code: body.code,
     phone: normalizePhone(body.phone),
-    date: body.date
+    date: body.date,
+    useBonus: body.useBonus === true,
+    bonusRequested: body.bonusAmount === undefined ? null : Number(body.bonusAmount)
   });
   if (result.error) {
     return res.status(404).json({ error: result.error, message: result.message });

@@ -280,6 +280,43 @@ CREATE TABLE IF NOT EXISTS certificate_redemptions (
   created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS bonus_accounts (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id     INTEGER NOT NULL UNIQUE REFERENCES clients(id),
+  balance       INTEGER NOT NULL DEFAULT 0,
+  total_earned  INTEGER NOT NULL DEFAULT 0,
+  total_spent   INTEGER NOT NULL DEFAULT 0,
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS bonus_transactions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id  INTEGER NOT NULL REFERENCES clients(id),
+  booking_id INTEGER,
+  kind       TEXT NOT NULL,
+  amount     INTEGER NOT NULL,
+  reason     TEXT,
+  expires_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS referrals (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  inviter_client_id INTEGER NOT NULL REFERENCES clients(id),
+  invited_client_id INTEGER,
+  invited_name      TEXT,
+  invited_phone     TEXT,
+  code              TEXT,
+  status            TEXT NOT NULL DEFAULT 'pending',
+  booking_id        INTEGER,
+  reward_inviter    INTEGER NOT NULL DEFAULT 0,
+  reward_invited    INTEGER NOT NULL DEFAULT 0,
+  rewarded_at       TEXT,
+  note              TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS lookups (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL,
@@ -298,6 +335,8 @@ CREATE INDEX IF NOT EXISTS idx_verifications_phone ON phone_verifications(phone,
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
 CREATE INDEX IF NOT EXISTS idx_certificates_code ON certificates(code);
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions ON coupon_redemptions(coupon_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_bonus_tx_client ON bonus_transactions(client_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_referrals_inviter ON referrals(inviter_client_id, created_at DESC);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -320,6 +359,11 @@ ensureColumn('bookings', 'coupon_id', 'coupon_id INTEGER');
 ensureColumn('bookings', 'coupon_code', 'coupon_code TEXT');
 ensureColumn('bookings', 'certificate_id', 'certificate_id INTEGER');
 ensureColumn('bookings', 'certificate_code', 'certificate_code TEXT');
+/* Бонусы и рефералы: сколько списали баллами, сколько начислили и по чьей ссылке пришёл клиент. */
+ensureColumn('bookings', 'bonus_spent', 'bonus_spent INTEGER NOT NULL DEFAULT 0');
+ensureColumn('bookings', 'bonus_earned', 'bonus_earned INTEGER NOT NULL DEFAULT 0');
+ensureColumn('bookings', 'referral_code', 'referral_code TEXT');
+ensureColumn('clients', 'ref_code', 'ref_code TEXT');
 
 export const DEFAULT_SETTINGS = {
   siteName: 'xenon.studio',
@@ -344,6 +388,25 @@ export const DEFAULT_SETTINGS = {
   appleCalendar: { enabled: false, url: '' },
   vipDiscount: { enabled: false, percent: 10 },
   loyalty: { enabled: false, percent: 5, afterSessions: 3 },
+  marketing: {
+    mode: 'bonus',
+    bonus: {
+      enabled: true,
+      percent: 5,
+      minSpend: 0,
+      maxPerBooking: 3000,
+      welcome: 500,
+      expireDays: 365,
+      redeemPercent: 30
+    },
+    referral: {
+      enabled: true,
+      rewardInviter: 1000,
+      rewardInvited: 500,
+      discountInvited: 500,
+      trigger: 'first_visit'
+    }
+  },
   schedule: DEFAULT_SCHEDULE,
   bookingForm: {
     requireVerification: true,
@@ -364,6 +427,37 @@ export const DEFAULT_SETTINGS = {
   sidebarCollapsed: false
 };
 
+export function normalizeMarketing(value, fallback = DEFAULT_SETTINGS.marketing) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const clamp = (input, min, max, def) => {
+    const num = Number(input);
+    if (!Number.isFinite(num)) return def;
+    return Math.min(Math.max(num, min), max);
+  };
+  const mode = source.mode === 'referral' ? 'referral' : 'bonus';
+  const bonus = { ...fallback.bonus, ...(source.bonus && typeof source.bonus === 'object' ? source.bonus : {}) };
+  const referral = { ...fallback.referral, ...(source.referral && typeof source.referral === 'object' ? source.referral : {}) };
+  return {
+    mode,
+    bonus: {
+      enabled: bonus.enabled !== false,
+      percent: clamp(bonus.percent, 0, 50, fallback.bonus.percent),
+      minSpend: clamp(bonus.minSpend, 0, 1000000, fallback.bonus.minSpend),
+      maxPerBooking: clamp(bonus.maxPerBooking, 0, 1000000, fallback.bonus.maxPerBooking),
+      welcome: clamp(bonus.welcome, 0, 100000, fallback.bonus.welcome),
+      expireDays: clamp(bonus.expireDays, 0, 3650, fallback.bonus.expireDays),
+      redeemPercent: clamp(bonus.redeemPercent, 0, 100, fallback.bonus.redeemPercent)
+    },
+    referral: {
+      enabled: referral.enabled !== false,
+      rewardInviter: clamp(referral.rewardInviter, 0, 100000, fallback.referral.rewardInviter),
+      rewardInvited: clamp(referral.rewardInvited, 0, 100000, fallback.referral.rewardInvited),
+      discountInvited: clamp(referral.discountInvited, 0, 100000, fallback.referral.discountInvited),
+      trigger: referral.trigger === 'signup' ? 'signup' : 'first_visit'
+    }
+  };
+}
+
 export function getSettings() {
   const row = db.prepare('SELECT data FROM settings WHERE id = 1').get();
   const stored = (() => {
@@ -376,6 +470,7 @@ export function getSettings() {
   })();
   const merged = { ...DEFAULT_SETTINGS, ...stored };
   merged.schedule = normalizeSchedule(stored.schedule, DEFAULT_SCHEDULE);
+  merged.marketing = normalizeMarketing(stored.marketing, DEFAULT_SETTINGS.marketing);
   return merged;
 }
 

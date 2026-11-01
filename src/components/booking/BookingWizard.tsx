@@ -54,6 +54,7 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoBusy, setPromoBusy] = useState(false);
+  const [useBonus, setUseBonus] = useState(false);
   const submittingRef = useRef(false);
 
   const requireVerification = variant === 'public' && Boolean(options?.form.requireVerification);
@@ -79,7 +80,8 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
           addons: addonsPayload,
           code: promoCode || undefined,
           phone: phoneDigits.length >= 11 ? draft.phone : undefined,
-          date: draft.date || undefined
+          date: draft.date || undefined,
+          useBonus
         })
         .then((data) => {
           if (!alive) return;
@@ -95,7 +97,7 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
       alive = false;
       clearTimeout(timer);
     };
-  }, [item, draft.serviceId, draft.packageId, addonsPayload, promoCode, phoneDigits, draft.date]);
+  }, [item, draft.serviceId, draft.packageId, addonsPayload, promoCode, phoneDigits, draft.date, useBonus]);
 
   const applyPromo = () => {
     const code = promoInput.trim().toUpperCase();
@@ -113,6 +115,10 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
   };
 
   const payable = quote ? quote.total : totals.total;
+  const referralCode = useMemo(() => {
+    if (variant !== 'public' || typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('ref') || '';
+  }, [variant]);
   const discountTotal = quote ? Math.max(quote.subtotal - quote.total, 0) : 0;
 
   useEffect(() => {
@@ -243,6 +249,8 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
           time: draft.time,
           addons: addonsPayload,
           promoCode: promoCode || undefined,
+          useBonus: useBonus || undefined,
+          ref: referralCode || undefined,
           verificationToken: token
         };
         const data = await api.post<CreatedBooking>(
@@ -271,7 +279,7 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
         setSubmitting(false);
       }
     },
-    [draft, variant, loadSlots, loadAvailability, options, month]
+    [draft, variant, loadSlots, loadAvailability, options, month, promoCode, useBonus, referralCode, addonsPayload]
   );
 
   const confirmCode = useCallback(
@@ -463,6 +471,9 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
               onPromoInput={setPromoInput}
               onApplyPromo={applyPromo}
               onClearPromo={clearPromo}
+              useBonus={useBonus}
+              onToggleBonus={setUseBonus}
+              showBonus={Boolean(options?.loyalty?.bonusEnabled)}
               requireVerification={requireVerification}
               code={code}
               onCode={(value) => {

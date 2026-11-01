@@ -28,6 +28,7 @@ const ClientsPage = lazy(() => import('../pages/admin/ClientsPage').then((m) => 
 const MessagesPage = lazy(() => import('../pages/admin/MessagesPage').then((m) => ({ default: m.MessagesPage })));
 const DiscountsPage = lazy(() => import('../pages/admin/DiscountsPage').then((m) => ({ default: m.DiscountsPage })));
 const CouponsPage = lazy(() => import('../pages/admin/CouponsPage').then((m) => ({ default: m.CouponsPage })));
+const BonusesPage = lazy(() => import('../pages/admin/BonusesPage').then((m) => ({ default: m.BonusesPage })));
 const CertificatesPage = lazy(() =>
   import('../pages/admin/CertificatesPage').then((m) => ({ default: m.CertificatesPage }))
 );
@@ -49,8 +50,6 @@ function GuestOnly({ children }: { children: ReactNode }) {
   if (user) return <Navigate to="/admin" replace />;
   return <>{children}</>;
 }
-
-const MARKETING_ROUTES: { path: string; section: string }[] = [{ path: 'marketing/bonuses', section: 'bonuses' }];
 
 const SETTINGS_ROUTES: { path: string; section: string }[] = [
   { path: 'settings/notifications', section: 'notifications' },
@@ -123,14 +122,8 @@ export function App() {
                     <Route path="marketing/discounts" element={<DiscountsPage />} />
                     <Route path="marketing/coupons" element={<CouponsPage />} />
                     <Route path="marketing/certificates" element={<CertificatesPage />} />
+                    <Route path="marketing/bonuses" element={<BonusesPage />} />
                     {SECTION_ROUTES.map((route) => (
-                      <Route
-                        key={route.path}
-                        path={route.path}
-                        element={<SectionPreviewPage sectionKey={route.section} />}
-                      />
-                    ))}
-                    {MARKETING_ROUTES.map((route) => (
                       <Route
                         key={route.path}
                         path={route.path}

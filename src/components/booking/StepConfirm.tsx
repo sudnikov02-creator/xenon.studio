@@ -16,6 +16,9 @@ export function StepConfirm({
   onPromoInput,
   onApplyPromo,
   onClearPromo,
+  showBonus = false,
+  useBonus = false,
+  onToggleBonus,
   requireVerification,
   code,
   onCode,
@@ -44,6 +47,9 @@ export function StepConfirm({
   onPromoInput: (value: string) => void;
   onApplyPromo: () => void;
   onClearPromo: () => void;
+  showBonus?: boolean;
+  useBonus?: boolean;
+  onToggleBonus?: (value: boolean) => void;
   requireVerification: boolean;
   code: string;
   onCode: (value: string) => void;
@@ -131,6 +137,9 @@ export function StepConfirm({
         onPromoInput={onPromoInput}
         onApplyPromo={onApplyPromo}
         onClearPromo={onClearPromo}
+        showBonus={showBonus}
+        useBonus={useBonus}
+        onToggleBonus={onToggleBonus}
       />
     </div>
   );

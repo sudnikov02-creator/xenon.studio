@@ -6,6 +6,7 @@ import { collectItem, isValidDateKey, isoForLocal, localKeyOf, slotsForDate } fr
 import { normalizePhone, prettyPhone, checkToken, consumeToken } from './verification.js';
 import { priceForBooking, priceAddons as priceAddonLines } from './pricing.js';
 import { redeemPromo } from './marketing.js';
+import { attachReferral, spendBonus } from './loyalty.js';
 
 const MAX_NAME = 80;
 const MAX_NOTE = 600;
@@ -146,13 +147,16 @@ export function createBooking({ payload, source = 'client', verificationToken, f
   }
 
   const { addons } = priceAddons(item.addons, payload?.addons);
+  const useBonus = payload?.useBonus === true;
   const quote = priceForBooking({
     serviceId,
     packageId,
     addons,
     code: payload?.promoCode || payload?.code,
     phone,
-    clientId: null
+    clientId: null,
+    useBonus,
+    bonusRequested: payload?.bonusAmount
   });
   if (quote.error) {
     return { status: 404, body: { error: quote.error, message: quote.message } };
@@ -196,8 +200,8 @@ export function createBooking({ payload, source = 'client', verificationToken, f
         `INSERT INTO bookings (public_code, client_id, service_id, package_id, starts_at, duration_min,
                                price, list_price, discount_amount, discount_id, coupon_id, coupon_code,
                                certificate_id, certificate_code, addons, status_id, source, notes, client_note,
-                               created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`
+                               bonus_spent, referral_code, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`
       )
       .run(
         makePublicCode(),
@@ -218,6 +222,8 @@ export function createBooking({ payload, source = 'client', verificationToken, f
         status.id,
         source,
         note || null,
+        quote.bonus?.used ? quote.bonus.applied : 0,
+        payload?.ref ? String(payload.ref).trim().toUpperCase().slice(0, 12) : null,
         now,
         now
       );
@@ -234,6 +240,25 @@ export function createBooking({ payload, source = 'client', verificationToken, f
     );
 
     redeemPromo({ quote, bookingId, clientId: client.id, phone });
+
+    if (quote.bonus?.used && quote.bonus.applied > 0) {
+      spendBonus({
+        clientId: client.id,
+        bookingId,
+        amount: quote.bonus.applied,
+        reason: 'Оплата баллами'
+      });
+    }
+
+    if (payload?.ref) {
+      attachReferral({
+        bookingId,
+        clientId: client.id,
+        phone,
+        name,
+        refCode: payload.ref
+      });
+    }
 
     db.prepare(
       `INSERT INTO notifications (kind, title, subtitle, action_label, action_url, is_read)

@@ -501,3 +501,39 @@ export interface ClientSlotsPayload {
   current: string;
   currentLocal: string;
 }
+
+/* ------------------------------ статусы ------------------------------ */
+
+export interface StatusSettingsItem {
+  id: number;
+  name: string;
+  color: string;
+  order: number;
+  isInitial: boolean;
+  isFinal: boolean;
+  isCancelled: boolean;
+  clientCanReschedule: boolean;
+  clientCanCancel: boolean;
+  actions: { id: string; label: string; kind: string }[];
+  bookings: number;
+  upcoming: number;
+  createdAt: string;
+}
+
+export interface StatusesSettingsPayload {
+  statuses: StatusSettingsItem[];
+  total: number;
+  archived: number;
+  initialId: number | null;
+  cancelledId: number | null;
+}
+
+export interface StatusDraft {
+  name: string;
+  color: string;
+  isInitial: boolean;
+  isFinal: boolean;
+  isCancelled: boolean;
+  clientCanReschedule: boolean;
+  clientCanCancel: boolean;
+}

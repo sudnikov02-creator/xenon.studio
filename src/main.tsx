@@ -10,6 +10,7 @@ import './styles/services.css';
 import './styles/booking.css';
 import './styles/bookings.css';
 import './styles/client.css';
+import './styles/statuses.css';
 import { App } from './app/App';
 
 const container = document.getElementById('root');

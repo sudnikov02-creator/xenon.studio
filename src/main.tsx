@@ -14,6 +14,7 @@ import './styles/statuses.css';
 import './styles/clients.css';
 import './styles/messages.css';
 import './styles/marketing.css';
+import './styles/automation.css';
 import { App } from './app/App';
 
 const container = document.getElementById('root');

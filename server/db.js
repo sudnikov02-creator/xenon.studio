@@ -317,6 +317,54 @@ CREATE TABLE IF NOT EXISTS referrals (
   updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS notification_templates (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  key        TEXT NOT NULL UNIQUE,
+  name       TEXT NOT NULL,
+  channel    TEXT NOT NULL DEFAULT 'telegram',
+  subject    TEXT,
+  body       TEXT NOT NULL,
+  is_active  INTEGER NOT NULL DEFAULT 1,
+  is_system  INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS automations (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  name          TEXT NOT NULL,
+  trigger       TEXT NOT NULL,
+  params        TEXT NOT NULL DEFAULT '{}',
+  conditions    TEXT NOT NULL DEFAULT '{}',
+  action        TEXT NOT NULL,
+  action_params TEXT NOT NULL DEFAULT '{}',
+  is_active     INTEGER NOT NULL DEFAULT 1,
+  runs          INTEGER NOT NULL DEFAULT 0,
+  last_run_at   TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS automation_marks (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  automation_id INTEGER NOT NULL,
+  entity        TEXT NOT NULL,
+  entity_id     INTEGER NOT NULL,
+  mark          TEXT NOT NULL,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (automation_id, entity, entity_id, mark)
+);
+
+CREATE TABLE IF NOT EXISTS automation_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  automation_id INTEGER,
+  booking_id    INTEGER,
+  client_id     INTEGER,
+  status        TEXT NOT NULL DEFAULT 'ok',
+  message       TEXT NOT NULL,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS lookups (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL,
@@ -337,6 +385,8 @@ CREATE INDEX IF NOT EXISTS idx_certificates_code ON certificates(code);
 CREATE INDEX IF NOT EXISTS idx_coupon_redemptions ON coupon_redemptions(coupon_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_bonus_tx_client ON bonus_transactions(client_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_referrals_inviter ON referrals(inviter_client_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_automation_log ON automation_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_automation_marks ON automation_marks(automation_id, entity, entity_id);
 `);
 
 /* ------------------------------------------------------------------ */

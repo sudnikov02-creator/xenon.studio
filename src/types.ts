@@ -927,3 +927,74 @@ export interface LoyaltyOverview {
   };
   topClients: BonusClient[];
 }
+
+/* ------------------------------ шаблоны и автоматизация ------------------------------ */
+
+export type TemplateChannel = 'telegram' | 'email' | 'push';
+
+export interface NotificationTemplate {
+  id: number;
+  key: string;
+  name: string;
+  channel: TemplateChannel;
+  subject: string | null;
+  body: string;
+  isActive: boolean;
+  isSystem: boolean;
+  sortOrder: number;
+  updatedAt: string;
+}
+
+export interface TemplateVariable {
+  key: string;
+  label: string;
+  sample: string;
+}
+
+export interface TemplateListPayload {
+  items: NotificationTemplate[];
+  variables: TemplateVariable[];
+  channels: { id: 'telegram' | 'email'; label: string }[];
+}
+
+export type AutomationTrigger = 'booking_created' | 'status_changed' | 'before_shoot' | 'after_shoot' | 'no_visits';
+export type AutomationAction = 'message' | 'notification' | 'status' | 'tag' | 'bonus';
+
+export interface AutomationRule {
+  id: number;
+  name: string;
+  trigger: AutomationTrigger;
+  params: { hours?: number; days?: number; statusId?: number | null };
+  conditions: { serviceId?: number | null; minAmount?: number; source?: 'client' | 'admin' | null; clientTag?: string | null };
+  action: AutomationAction;
+  actionParams: { templateKey?: string | null; channel?: 'telegram' | 'email' | null; statusId?: number | null; tag?: string; amount?: number; title?: string | null };
+  isActive: boolean;
+  runs: number;
+  lastRunAt: string | null;
+  createdAt: string;
+}
+
+export interface AutomationLogItem {
+  id: number;
+  automationId: number | null;
+  automationName: string;
+  bookingId: number | null;
+  clientId: number | null;
+  status: 'ok' | 'skipped' | string;
+  message: string;
+  createdAt: string;
+}
+
+export interface AutomationMeta {
+  triggers: { id: AutomationTrigger; label: string; hint: string }[];
+  actions: { id: AutomationAction; label: string; hint: string }[];
+  templates: { id: number; key: string; name: string; channel: TemplateChannel }[];
+  statuses: { id: number; name: string }[];
+  services: { id: number; name: string }[];
+}
+
+export interface AutomationRulesPayload {
+  items: AutomationRule[];
+  log: AutomationLogItem[];
+  meta: AutomationMeta;
+}

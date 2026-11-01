@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { seedIfEmpty } from './lib/seed.js';
 import { purgeExpiredSessions } from './lib/auth.js';
 import { initPush } from './lib/push.js';
+import { ensureTemplates, tick } from './lib/automation.js';
 
 import authRoutes from './routes/auth.js';
 import settingsRoutes from './routes/settings.js';
@@ -23,6 +24,7 @@ import statusesRoutes from './routes/statuses.js';
 import clientsRoutes from './routes/clients.js';
 import messagesRoutes from './routes/messages.js';
 import marketingRoutes from './routes/marketing.js';
+import automationRoutes from './routes/automation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, '..', 'dist');
@@ -33,13 +35,32 @@ const SERVERLESS = Boolean(process.env.VERCEL);
 
 let initialized = false;
 
+let lastAutomationTick = 0;
+
+/* Сценарии по времени проверяются не чаще раза в пять минут — и на serverless,
+   где интервала нет, достаточно первого же запроса к API. */
+function maybeTickAutomation() {
+  const now = Date.now();
+  if (now - lastAutomationTick < 5 * 60 * 1000) return;
+  lastAutomationTick = now;
+  try {
+    tick();
+  } catch (err) {
+    console.error('[automation] tick failed:', err?.message || err);
+  }
+}
+
 function initialize() {
   if (initialized) return;
   initialized = true;
   seedIfEmpty();
   purgeExpiredSessions();
   initPush();
-  if (!SERVERLESS) setInterval(purgeExpiredSessions, 6 * 3600 * 1000).unref?.();
+  ensureTemplates();
+  if (!SERVERLESS) {
+    setInterval(purgeExpiredSessions, 6 * 3600 * 1000).unref?.();
+    setInterval(maybeTickAutomation, 5 * 60 * 1000).unref?.();
+  }
 }
 
 export function createApp({ serveStatic = true } = {}) {
@@ -55,6 +76,11 @@ export function createApp({ serveStatic = true } = {}) {
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+
+  app.use('/api', (req, res, next) => {
+    maybeTickAutomation();
     next();
   });
 
@@ -75,6 +101,7 @@ export function createApp({ serveStatic = true } = {}) {
   app.use('/api/clients', clientsRoutes);
   app.use('/api/messages', messagesRoutes);
   app.use('/api/marketing', marketingRoutes);
+  app.use('/api/automation', automationRoutes);
   app.use('/api', servicesRoutes);
   app.use('/api', realtimeRoutes);
 

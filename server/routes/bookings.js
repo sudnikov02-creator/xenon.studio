@@ -4,6 +4,7 @@ import { requireAuth } from '../lib/auth.js';
 import { broadcast, broadcastBadges, broadcastBookingUpdate } from '../lib/sse.js';
 import { getBookingById } from '../lib/bookings.js';
 import { createBooking } from '../lib/booking-create.js';
+import { handleEvent } from '../lib/automation.js';
 import { getSettings } from '../db.js';
 import {
   bookingDetail,
@@ -126,6 +127,11 @@ router.post('/:id(\\d+)/status', requireAuth, (req, res) => {
     broadcast('booking', { id: Number(req.params.id), action: 'status' });
     broadcastBookingUpdate(Number(req.params.id), { action: 'status' });
     broadcastBadges();
+    try {
+      handleEvent('status_changed', { bookingId: Number(req.params.id), statusId: Number(req.body?.statusId) });
+    } catch (err) {
+      console.error('[automation] status_changed:', err?.message || err);
+    }
   }
   res.status(result.status).json(result.body);
 });
@@ -165,6 +171,13 @@ router.post('/', requireAuth, (req, res) => {
     source: 'admin',
     force: req.body?.force === true
   });
+  if (result.status === 201 && result.body?.booking?.id) {
+    try {
+      handleEvent('booking_created', { bookingId: result.body.booking.id });
+    } catch (err) {
+      console.error('[automation] booking_created:', err?.message || err);
+    }
+  }
   res.status(result.status).json(result.body);
 });
 

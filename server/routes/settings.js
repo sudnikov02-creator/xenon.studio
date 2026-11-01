@@ -33,6 +33,18 @@ router.patch('/', requireAuth, (req, res) => {
       introText: String(form.introText || '').trim().slice(0, 240)
     };
   }
+  if (patch.contacts !== undefined) {
+    if (!patch.contacts || typeof patch.contacts !== 'object' || Array.isArray(patch.contacts)) {
+      return res.status(422).json({ error: 'invalid_contacts', message: 'Некорректные контакты' });
+    }
+    const text = (value, max) => String(value ?? '').trim().slice(0, max);
+    patch.contacts = {
+      phone: text(patch.contacts.phone, 40),
+      telegram: text(patch.contacts.telegram, 60).replace(/^@/, '').replace(/^https?:\/\/t\.me\//i, ''),
+      instagram: text(patch.contacts.instagram, 60).replace(/^@/, '').replace(/^https?:\/\/instagram\.com\//i, ''),
+      email: text(patch.contacts.email, 120)
+    };
+  }
   const current = getSettings();
   const merged = { ...patch };
   for (const [key, value] of Object.entries(patch)) {

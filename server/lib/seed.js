@@ -48,6 +48,17 @@ export function ensureSeed() {
       siteName: 'xenon.studio',
       brandTagline: 'Фотограф · естественный свет и живые эмоции',
       landingEnabled: true,
+      contacts: {
+        phone: '+375 29 120-45-67',
+        telegram: 'xenon_studio',
+        instagram: 'xenon.studio',
+        email: 'hello@xenon.studio'
+      },
+      agreement: {
+        enabled: true,
+        text: 'Съёмка переносится бесплатно не позднее чем за 12 часов. Оплата — в день съёмки. Готовые кадры приходят ссылкой на галерею в течение 14 дней.',
+        consentText: 'Согласен с условиями съёмки'
+      },
       loyalty: { enabled: true, percent: 5, afterSessions: 3 },
       vipDiscount: { enabled: true, percent: 10 },
       chatEnabled: true

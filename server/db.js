@@ -245,6 +245,7 @@ export const DEFAULT_SETTINGS = {
   minNoticeHours: 12,
   chatEnabled: true,
   landingEnabled: false,
+  contacts: { phone: '', telegram: '', instagram: '', email: '' },
   verification: { enabled: false, telegram: true, email: false },
   agreement: { enabled: false, text: '', consentText: '' },
   seo: { title: 'xenon.studio — фотосессии', description: '', ogImage: null },

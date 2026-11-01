@@ -19,6 +19,7 @@ router.get('/branding', (req, res) => {
       currencyCode: settings.currencyCode,
       decimalSeparator: settings.decimalSeparator,
       locale: settings.locale,
+      contacts: settings.contacts || { phone: '', telegram: '', instagram: '', email: '' },
       landingEnabled: settings.landingEnabled,
       seo: settings.seo
     }

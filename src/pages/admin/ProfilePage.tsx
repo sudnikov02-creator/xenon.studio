@@ -1,9 +1,23 @@
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, Download, KeyRound, LogOut, Mail, ShieldCheck, Smartphone, User } from 'lucide-react';
+import {
+  AlertCircle,
+  Camera,
+  Check,
+  Download,
+  KeyRound,
+  LogOut,
+  Mail,
+  Phone,
+  Send,
+  ShieldCheck,
+  Smartphone,
+  User
+} from 'lucide-react';
 import { PageHead } from '../../components/ui/PageHead';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useSettings } from '../../context/SettingsContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { api, ApiError } from '../../lib/api';
 import { formatDate, initials } from '../../lib/utils';
@@ -11,6 +25,7 @@ import { formatDate, initials } from '../../lib/utils';
 export function ProfilePage() {
   const { user, refresh, logout } = useAuth();
   const { toast } = useToast();
+  const { branding, updateSettings } = useSettings();
   const { canInstall, installed, install } = usePwaInstall();
   const navigate = useNavigate();
 
@@ -18,6 +33,39 @@ export function ProfilePage() {
   const [email, setEmail] = useState(user?.email || '');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  const [contacts, setContacts] = useState({ phone: '', telegram: '', instagram: '', email: '' });
+  const [savingContacts, setSavingContacts] = useState(false);
+  const [contactsError, setContactsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setContacts({
+      phone: branding.contacts?.phone || '',
+      telegram: branding.contacts?.telegram || '',
+      instagram: branding.contacts?.instagram || '',
+      email: branding.contacts?.email || ''
+    });
+  }, [branding.contacts]);
+
+  const contactsDirty =
+    contacts.phone !== (branding.contacts?.phone || '') ||
+    contacts.telegram !== (branding.contacts?.telegram || '') ||
+    contacts.instagram !== (branding.contacts?.instagram || '') ||
+    contacts.email !== (branding.contacts?.email || '');
+
+  const saveContacts = async (event: FormEvent) => {
+    event.preventDefault();
+    setContactsError(null);
+    setSavingContacts(true);
+    try {
+      await updateSettings({ contacts });
+      toast({ title: 'Контакты обновлены', subtitle: 'Клиенты увидят их на странице записи', variant: 'success' });
+    } catch (err) {
+      setContactsError(err instanceof ApiError ? err.message : 'Не удалось сохранить контакты');
+    } finally {
+      setSavingContacts(false);
+    }
+  };
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -137,6 +185,91 @@ export function ProfilePage() {
                 disabled={!profileDirty || savingProfile}
               >
                 Сохранить
+              </button>
+            </div>
+          </form>
+
+          <form className="card card--pad form-card" onSubmit={saveContacts}>
+            <div className="section-head">
+              <div>
+                <div className="panel-title">Контакты для клиентов</div>
+                <div className="panel-sub">Показываются на личной странице записи /b/…</div>
+              </div>
+              <span className="next-card__icon">
+                <Phone />
+              </span>
+            </div>
+
+            {contactsError && (
+              <div className="auth-alert" role="alert">
+                <AlertCircle />
+                <span>{contactsError}</span>
+              </div>
+            )}
+
+            <div className="form-row">
+              <label className="field">
+                <span className="field__label">Телефон</span>
+                <span className="input-wrap">
+                  <Phone />
+                  <input
+                    className="input"
+                    value={contacts.phone}
+                    onChange={(event) => setContacts((prev) => ({ ...prev, phone: event.target.value }))}
+                    placeholder="+375 29 120-45-67"
+                  />
+                </span>
+              </label>
+              <label className="field">
+                <span className="field__label">Telegram</span>
+                <span className="input-wrap">
+                  <Send />
+                  <input
+                    className="input"
+                    value={contacts.telegram}
+                    onChange={(event) => setContacts((prev) => ({ ...prev, telegram: event.target.value }))}
+                    placeholder="xenon_studio"
+                  />
+                </span>
+              </label>
+            </div>
+
+            <div className="form-row">
+              <label className="field">
+                <span className="field__label">Instagram</span>
+                <span className="input-wrap">
+                  <Camera />
+                  <input
+                    className="input"
+                    value={contacts.instagram}
+                    onChange={(event) => setContacts((prev) => ({ ...prev, instagram: event.target.value }))}
+                    placeholder="xenon.studio"
+                  />
+                </span>
+              </label>
+              <label className="field">
+                <span className="field__label">Почта</span>
+                <span className="input-wrap">
+                  <Mail />
+                  <input
+                    className="input"
+                    type="email"
+                    value={contacts.email}
+                    onChange={(event) => setContacts((prev) => ({ ...prev, email: event.target.value }))}
+                    placeholder="hello@xenon.studio"
+                  />
+                </span>
+              </label>
+            </div>
+
+            <div className="form-actions">
+              <span className="field__hint">Клиент сможет позвонить или написать в один клик.</span>
+              <button
+                type="submit"
+                className={`btn btn--primary${savingContacts ? ' btn--loading' : ''}`}
+                disabled={!contactsDirty || savingContacts}
+              >
+                Сохранить контакты
               </button>
             </div>
           </form>

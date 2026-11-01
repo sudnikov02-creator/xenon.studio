@@ -11,7 +11,7 @@ router.get('/', requireAuth, (req, res) => {
     .prepare(
       `SELECT id, kind, title, subtitle, action_label AS actionLabel, action_url AS actionUrl,
               is_read AS isRead, created_at AS createdAt
-       FROM notifications ORDER BY created_at DESC, id DESC LIMIT ?`
+       FROM notifications ORDER BY datetime(created_at) DESC, id DESC LIMIT ?`
     )
     .all(limit);
   res.json({ items, badges: badges() });

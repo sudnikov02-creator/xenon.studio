@@ -41,6 +41,9 @@ const CertificatesPage = lazy(() =>
 const BookingFormSettingsPage = lazy(() =>
   import('../pages/admin/BookingFormSettingsPage').then((m) => ({ default: m.BookingFormSettingsPage }))
 );
+const CalendarPage = lazy(() => import('../pages/admin/CalendarPage').then((m) => ({ default: m.CalendarPage })));
+const AnalyticsPage = lazy(() => import('../pages/admin/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })));
+const ActivityPage = lazy(() => import('../pages/admin/ActivityPage').then((m) => ({ default: m.ActivityPage })));
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, status } = useAuth();
@@ -68,10 +71,7 @@ const SETTINGS_ROUTES: { path: string; section: string }[] = [
 ];
 
 const SECTION_ROUTES: { path: string; section: string }[] = [
-  { path: 'calendar', section: 'calendar' },
   { path: 'reviews', section: 'reviews' },
-  { path: 'analytics', section: 'analytics' },
-  { path: 'activity', section: 'activity' },
   { path: 'landing', section: 'landing' }
 ];
 
@@ -129,6 +129,9 @@ export function App() {
                     <Route path="marketing/bonuses" element={<BonusesPage />} />
                     <Route path="settings/notifications" element={<NotificationsSettingsPage />} />
                     <Route path="settings/automation" element={<AutomationSettingsPage />} />
+                    <Route path="calendar" element={<CalendarPage />} />
+                    <Route path="analytics" element={<AnalyticsPage />} />
+                    <Route path="activity" element={<ActivityPage />} />
                     {SECTION_ROUTES.map((route) => (
                       <Route
                         key={route.path}

@@ -579,6 +579,31 @@ export function ensureSeed() {
     insertRun.run(4, 3, 3, 'ok', 'Спасибо после съёмки: «Спасибо за съёмку» → Telegram', iso(-1, 18, 30));
     insertRun.run(6, null, 8, 'skipped', 'Возврат спящих клиентов: у клиента нет Telegram', iso(-12, 10, 0));
 
+    /* Существующие записи считаем уже обработанными, чтобы при первом запуске
+       не рассылать напоминания по всей истории сразу. */
+    const mark = db.prepare(
+      `INSERT OR IGNORE INTO automation_marks (automation_id, entity, entity_id, mark, created_at)
+       VALUES (?, 'booking', ?, ?, ?)`
+    );
+    const ruleRows = db.prepare("SELECT id, trigger, params FROM automations").all();
+    const allBookings = db.prepare('SELECT id FROM bookings').all();
+    for (const rule of ruleRows) {
+      let suffix = null;
+      if (rule.trigger === 'before_shoot') suffix = `before:${JSON.parse(rule.params).hours ?? 24}`;
+      if (rule.trigger === 'after_shoot') suffix = `after:${JSON.parse(rule.params).days ?? 1}`;
+      if (!suffix) continue;
+      for (const booking of allBookings) mark.run(rule.id, booking.id, suffix, iso(0, 6, 0));
+    }
+
+    /* внешний календарь: личные события, которые закрывают слоты */
+    const insertExternal = db.prepare(
+      `INSERT OR IGNORE INTO external_events (uid, title, starts_at, ends_at, all_day, source, created_at)
+       VALUES (?, ?, ?, ?, ?, 'apple', ?)`
+    );
+    insertExternal.run('apple-personal-1@xenon', 'Личное: врач', iso(1, 12, 0), iso(1, 13, 30), 0, iso(-3, 10, 0));
+    insertExternal.run('apple-personal-2@xenon', 'Съёмка для друга', iso(3, 18, 0), iso(3, 20, 0), 0, iso(-3, 10, 0));
+    insertExternal.run('apple-personal-3@xenon', 'Отпуск', iso(9, 0, 0), iso(9, 23, 59), 1, iso(-3, 10, 0));
+
     /* activity log */
     const activity = [
       ['booking', 'Новая заявка от Марии Лебедевой', 'Love story · сегодня, 15:30', 'booking', 2],
@@ -588,7 +613,13 @@ export function ensureSeed() {
       ['client', 'Клиент добавлен в VIP', 'Елена Соколова', 'client', 4],
       ['discount', 'Применён промокод', 'SPRING15 · скидка 15%', 'booking', 12],
       ['gallery', 'Ссылка на галерею добавлена', 'Анна Ковалёва · Яндекс Диск', 'booking', 10],
-      ['review', 'Отзыв одобрен', 'Ольга Морозова · 5 из 5', 'review', 1]
+      ['review', 'Отзыв одобрен', 'Ольга Морозова · 5 из 5', 'review', 1],
+      ['client', 'Клиент пришёл по рекомендации', 'Алина Гурская · ссылка ANNA24', 'referral', 1],
+      ['marketing', 'Применён подарочный сертификат', 'GIFT-5K-NEWY · 3 000 ₽', 'certificate', 3],
+      ['status', 'Клиент перенёс съёмку', 'Дмитрий Орлов · +1 день', 'booking', 3],
+      ['message', 'Сообщение на почту', 'Ольга Морозова · галерея готова', 'conversation', 7],
+      ['booking', 'Заявка отклонена', 'Виктория Смирнова · без объяснения', 'booking', 49],
+      ['settings', 'Изменено расписание', 'Суббота до 16:00', 'settings', null]
     ];
     const insertActivity = db.prepare(
       `INSERT INTO activity_log (type, title, description, entity, entity_id, actor, created_at) VALUES (?, ?, ?, ?, ?, 'photographer', ?)`
@@ -596,6 +627,18 @@ export function ensureSeed() {
     activity.forEach(([type, title, description, entity, entityId], i) => {
       insertActivity.run(type, title, description, entity, entityId, iso(-i, 12, 0));
     });
+
+    /* часть событий пришла от клиентов и системы — для фильтра по автору */
+    const actorUpdate = db.prepare('UPDATE activity_log SET actor = ? WHERE id = ?');
+    const actorRows = [
+      ['client', 1],
+      ['client', 4],
+      ['system', 5],
+      ['client', 9],
+      ['system', 11],
+      ['client', 12]
+    ];
+    actorRows.forEach(([actor, id]) => actorUpdate.run(actor, id));
   });
 
   seed();

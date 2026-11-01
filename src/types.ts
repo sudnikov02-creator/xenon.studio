@@ -998,3 +998,146 @@ export interface AutomationRulesPayload {
   log: AutomationLogItem[];
   meta: AutomationMeta;
 }
+
+/* ------------------------------ календарь студии ------------------------------ */
+
+export type CalendarView = 'day' | 'week' | 'month';
+
+export interface CalendarEntry {
+  id: number;
+  code: string;
+  date: string;
+  startMin: number;
+  endMin: number;
+  time: string;
+  endTime: string;
+  duration: number;
+  price: number;
+  source: string;
+  client: { id: number; name: string; phone: string | null } | null;
+  item: { name: string; serviceId: number | null; packageId: number | null };
+  status: { id: number; name: string; color: string; isInitial: boolean; isFinal: boolean; isCancelled: boolean } | null;
+}
+
+export interface CalendarExternal {
+  id: string;
+  title: string;
+  date: string;
+  startMin: number;
+  endMin: number;
+  allDay: boolean;
+  source: string;
+}
+
+export interface CalendarDay {
+  date: string;
+  weekday: string;
+  day: number;
+  month: number;
+  isToday: boolean;
+  isPast: boolean;
+  closed: boolean;
+  windows: { from: number; to: number }[];
+  bookings: CalendarEntry[];
+  external: CalendarExternal[];
+  revenue: number;
+  count: number;
+}
+
+export interface CalendarPayload {
+  view: CalendarView;
+  date: string;
+  today: string;
+  from: string;
+  to: string;
+  weekdays: string[];
+  days: CalendarDay[];
+  totals: { bookings: number; pending: number; cancelled: number; revenue: number; external: number };
+  schedule: { minNoticeHours: number; horizonDays: number; step: number };
+  calendar: {
+    enabled: boolean;
+    url: string;
+    exportToken: string | null;
+    lastSyncAt: string | null;
+    lastSyncCount: number;
+    lastSyncError: string | null;
+  };
+}
+
+export interface ExternalCalendarEvent {
+  id: number;
+  uid: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  localDate: string;
+  allDay: boolean;
+}
+
+/* ------------------------------ аналитика ------------------------------ */
+
+export interface AnalyticsPayload {
+  period: string;
+  periods: { id: string; label: string }[];
+  from: string;
+  to: string;
+  currency: { symbol: string; separator: 'comma' | 'dot' };
+  metrics: {
+    revenue: number;
+    revenueTrend: number | null;
+    bookings: number;
+    bookingsTrend: number | null;
+    avgCheck: number;
+    avgCheckTrend: number | null;
+    load: number;
+    hours: number;
+    cancelled: number;
+    cancelRate: number;
+    discounts: number;
+    bonusSpent: number;
+    newClients: number;
+    returning: number;
+    paid: number;
+  };
+  series: { key: string; label: string; revenue: number; bookings: number; hours: number }[];
+  maxRevenue: number;
+  topItems: { name: string; count: number; revenue: number; minutes: number; share: number }[];
+  topClients: { id: number; name: string; count: number; revenue: number; isVip: boolean }[];
+  statuses: { name: string; color: string; count: number }[];
+  sources: { id: string; label: string; count: number }[];
+  promo: {
+    coupons: { count: number; amount: number };
+    certificates: { count: number; amount: number };
+    total: number;
+    saved: number;
+    bonusSpent: number;
+  };
+  bucket: 'day' | 'week' | 'month';
+}
+
+/* ------------------------------ журнал действий ------------------------------ */
+
+export interface ActivityItem {
+  id: number;
+  type: string;
+  title: string;
+  description: string | null;
+  entity: string | null;
+  entityId: number | null;
+  actor: 'photographer' | 'client' | 'system' | string;
+  createdAt: string;
+  day: string;
+  isToday: boolean;
+}
+
+export interface ActivityPayload {
+  items: ActivityItem[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  filter: { type: string; actor: string; q: string };
+  types: { id: string; label: string; tone: string; count: number }[];
+  actors: { id: string; label: string; count: number }[];
+  counts: { all: number; today: number };
+}

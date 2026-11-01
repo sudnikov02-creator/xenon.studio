@@ -345,3 +345,80 @@ export interface CreatedBooking {
   message: string;
   localDate: string;
 }
+
+/* ------------------------------- bookings ------------------------------- */
+
+export interface BookingStatusInfo {
+  id: number;
+  name: string;
+  color: string;
+  order: number;
+  isInitial: boolean;
+  isFinal: boolean;
+  isCancelled: boolean;
+  count: number;
+}
+
+export interface BookingStatusesPayload {
+  statuses: BookingStatusInfo[];
+  total: number;
+  today: string;
+  todayCount: number;
+}
+
+export interface BookingListPayload {
+  items: BookingSummary[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  status: string;
+  period: string;
+  range: { start: string | null; end: string | null };
+}
+
+export interface BookingEventItem {
+  id: number;
+  type: string;
+  title: string;
+  message: string | null;
+  actor: string;
+  createdAt: string;
+}
+
+export interface BookingClientDetail {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  telegram: string | null;
+  instagram: string | null;
+  isVip: boolean;
+  notes: string | null;
+}
+
+export interface BookingDetail {
+  booking: BookingSummary;
+  source: string;
+  clientNote: string | null;
+  client: BookingClientDetail | null;
+  service: { id: number; name: string; description: string | null } | null;
+  package: { id: number; name: string; services: { name: string; duration: number }[] } | null;
+  events: BookingEventItem[];
+}
+
+export interface BookingSlotsPayload {
+  date: string;
+  duration: number;
+  current: string;
+  currentLocal: string;
+  slots: { time: string; iso: string }[];
+}
+
+export interface BookingMonthPayload {
+  month: string;
+  days: Record<string, { count: number; first: string; last: string }>;
+  today: string;
+}
+
+export type BookingPeriod = 'all' | 'today' | 'week' | 'month' | 'upcoming' | 'past';

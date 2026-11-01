@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BadgePercent, CalendarClock, Check, Clock3, Gift, Layers, Sparkles, Tag, X } from 'lucide-react';
+import { BadgePercent, CalendarClock, Check, Clock3, Coins, Gift, Layers, Sparkles, Tag, X } from 'lucide-react';
 import { formatDuration, formatPrice } from '../../lib/services';
 import { formatLongDate, relativeDayLabel } from '../../lib/booking';
 import type { BookingDraft, BookingFormOptions, PriceQuote } from '../../types';
@@ -18,6 +18,9 @@ export function BookingSummary({
   onApplyPromo,
   onClearPromo,
   showPromo = false,
+  showBonus = false,
+  useBonus = false,
+  onToggleBonus,
   compact = false
 }: {
   options: BookingFormOptions | null;
@@ -33,6 +36,9 @@ export function BookingSummary({
   onApplyPromo?: () => void;
   onClearPromo?: () => void;
   showPromo?: boolean;
+  showBonus?: boolean;
+  useBonus?: boolean;
+  onToggleBonus?: (value: boolean) => void;
   compact?: boolean;
 }) {
   const currency = options?.branding.currencySymbol || '₽';
@@ -41,6 +47,8 @@ export function BookingSummary({
   const payable = quote ? quote.total : totals.total;
   const autoDiscount = quote?.discount || null;
   const promo = quote?.promo || null;
+  const bonus = quote?.bonus || null;
+  const bonusApplied = useBonus && bonus ? bonus.applied : 0;
   const savings = quote ? Math.max(quote.subtotal - quote.total, 0) : 0;
   const promoVisible = showPromo || Boolean(onApplyPromo);
   const dateLabel = draft.date
@@ -138,6 +146,15 @@ export function BookingSummary({
           </div>
         )}
 
+        {bonusApplied > 0 && (
+          <div className="bk-sum__saving bk-sum__saving--bonus" data-reveal>
+            <span>
+              <Coins /> Оплата баллами
+            </span>
+            <b className="tnum">−{formatPrice(bonusApplied, currency)}</b>
+          </div>
+        )}
+
         {promoVisible && !compact && item && (
           <div className="bk-sum__promo">
             {promo ? (
@@ -186,8 +203,28 @@ export function BookingSummary({
           </div>
         )}
 
+        {showBonus && bonus && bonus.available > 0 && !compact && (
+          <div className="bk-bonus">
+            <div className="bk-bonus__info">
+              <Coins />
+              <span>
+                <b>{bonus.available}</b> баллов на счёте
+                {bonus.limit > 0 && <em>можно списать до {formatPrice(bonus.limit, currency)}</em>}
+              </span>
+            </div>
+            <label className="bk-bonus__toggle">
+              <input
+                type="checkbox"
+                checked={useBonus}
+                onChange={(event) => onToggleBonus?.(event.target.checked)}
+              />
+              <span>Оплатить баллами</span>
+            </label>
+          </div>
+        )}
+
         <div className="bk-sum__grand">
-          <span>Итого</span>
+          <span>Итого{savings > 0 ? ' · со скидкой' : ''}</span>
           <b className="tnum">{formatPrice(payable, currency)}</b>
         </div>
       </div>

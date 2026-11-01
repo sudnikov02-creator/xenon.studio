@@ -705,3 +705,61 @@
     transform: none;
   }
 }
+
+/* --- лояльность в карточке клиента --- */
+.cl-loyalty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cl-loyalty__balance {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #0d9488 7%, #fff);
+  border: 1px solid color-mix(in srgb, #0d9488 22%, transparent);
+}
+
+.cl-loyalty__balance b {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.cl-loyalty__balance span {
+  font-size: 12px;
+  color: #115e59;
+}
+
+.cl-loyalty__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed #cbd5e1;
+  background: #fff;
+  color: var(--text-2, #475569);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.22s ease, color 0.22s ease, transform 0.22s ease;
+}
+
+.cl-loyalty__link svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cl-loyalty__link:hover {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 40%, transparent);
+  color: var(--accent, #2563eb);
+}
+
+.cl-loyalty__link:active {
+  transform: scale(0.98);
+}

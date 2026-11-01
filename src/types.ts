@@ -300,6 +300,12 @@ export interface BookingFormOptions {
     introText: string;
   };
   agreement: { enabled: boolean; text: string; consentText: string };
+  loyalty?: {
+    mode: 'bonus' | 'referral';
+    bonusEnabled: boolean;
+    redeemPercent: number;
+    referralEnabled: boolean;
+  };
   branding: {
     siteName: string;
     photographerName: string;
@@ -604,6 +610,7 @@ export interface ClientDetailPayload {
     firstVisit: string | null;
     services: string[];
   };
+  loyalty?: { balance: number; refCode: string | null; invited: number; rewarded: number };
   today: string;
 }
 
@@ -817,6 +824,106 @@ export interface PriceQuote {
   } | null;
   promoError: string | null;
   afterDiscount: number;
+  afterPromo?: number;
+  bonus?: { available: number; limit: number; applied: number; used: boolean };
+  afterBonus?: number;
   total: number;
   today: string;
+}
+
+export type LoyaltyMode = 'bonus' | 'referral';
+
+export interface LoyaltySettings {
+  mode: LoyaltyMode;
+  bonus: {
+    enabled: boolean;
+    percent: number;
+    minSpend: number;
+    maxPerBooking: number;
+    welcome: number;
+    expireDays: number;
+    redeemPercent: number;
+  };
+  referral: {
+    enabled: boolean;
+    rewardInviter: number;
+    rewardInvited: number;
+    discountInvited: number;
+    trigger: 'first_visit' | 'signup';
+  };
+}
+
+export interface BonusClient {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  isVip: boolean;
+  refCode: string | null;
+  bookings: number;
+  invited: number;
+  balance: number;
+}
+
+export interface BonusTransaction {
+  id: number;
+  bookingId: number | null;
+  kind: 'earn' | 'spend' | 'adjust' | 'referral' | string;
+  amount: number;
+  reason: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface BonusHistory {
+  client: { id: number; name: string; phone: string | null; refCode: string | null };
+  balance: number;
+  items: BonusTransaction[];
+}
+
+export interface ReferralItem {
+  id: number;
+  status: 'pending' | 'rewarded' | 'cancelled';
+  code: string | null;
+  inviter: { id: number; name: string; phone: string | null; refCode: string | null } | null;
+  invited: { id: number | null; name: string; phone: string | null };
+  bookingId: number | null;
+  rewardInviter: number;
+  rewardInvited: number;
+  note: string | null;
+  rewardedAt: string | null;
+  createdAt: string;
+  waitingDays: number;
+}
+
+export interface ReferralListPayload {
+  items: ReferralItem[];
+  counts: { all: number; pending: number; rewarded: number; cancelled: number };
+  rewardTotal: number;
+}
+
+export interface LoyaltyOverview {
+  mode: LoyaltyMode;
+  settings: LoyaltySettings;
+  today: string;
+  bonus: {
+    balance: number;
+    issued: number;
+    spent: number;
+    monthIssued: number;
+    accounts: number;
+    active: number;
+    average: number;
+    pending: number;
+  };
+  referral: {
+    all: number;
+    pending: number;
+    rewarded: number;
+    cancelled: number;
+    rewardTotal: number;
+    share: number;
+    pendingReward: number;
+  };
+  topClients: BonusClient[];
 }

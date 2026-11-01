@@ -4,6 +4,8 @@ import {
   CalendarDays,
   Camera,
   Check,
+  Coins,
+  Copy,
   CreditCard,
   History,
   Mail,
@@ -50,6 +52,7 @@ export function ClientDrawer({
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
@@ -327,6 +330,38 @@ export function ClientDrawer({
                 </div>
               </div>
             </section>
+
+            {detail.loyalty && (
+              <section className="bd__section">
+                <header className="bd__section-head">
+                  <h4>
+                    <Coins /> Бонусы и рекомендации
+                  </h4>
+                  <span>{detail.loyalty.invited} приглашено</span>
+                </header>
+                <div className="cl-loyalty">
+                  <div className="cl-loyalty__balance">
+                    <b className="tnum">{detail.loyalty.balance}</b>
+                    <span>баллов на счёте</span>
+                  </div>
+                  {detail.loyalty.refCode && (
+                    <button
+                      type="button"
+                      className="cl-loyalty__link"
+                      onClick={() => {
+                        const link = `${window.location.origin}/booking?ref=${detail.loyalty?.refCode}`;
+                        void navigator.clipboard?.writeText(link);
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 1600);
+                      }}
+                    >
+                      {copiedLink ? <Check /> : <Copy />}
+                      {copiedLink ? 'Ссылка скопирована' : `Реферальная ссылка · ${detail.loyalty.refCode}`}
+                    </button>
+                  )}
+                </div>
+              </section>
+            )}
 
             <section className="bd__section">
               <header className="bd__section-head">

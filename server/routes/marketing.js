@@ -17,6 +17,17 @@ import {
   updateCoupon,
   updateDiscount
 } from '../lib/marketing.js';
+import {
+  adjustBonus,
+  bonusHistory,
+  cancelReferral,
+  createReferral,
+  listBonusClients,
+  listReferrals,
+  loyaltyOverview,
+  rewardReferral,
+  saveLoyaltySettings
+} from '../lib/loyalty.js';
 
 const router = express.Router();
 router.use(requireAuth);
@@ -37,13 +48,13 @@ router.post('/discounts', (req, res) => {
   res.status(result.status).json(result.body);
 });
 
-router.patch('/discounts/:id(\\d+)', (req, res) => {
+router.patch('/discounts/:id([0-9]+)', (req, res) => {
   const result = updateDiscount(Number(req.params.id), req.body || {});
   if (result.status === 200) broadcast('marketing', { kind: 'discount', action: 'updated', id: Number(req.params.id) });
   res.status(result.status).json(result.body);
 });
 
-router.delete('/discounts/:id(\\d+)', (req, res) => {
+router.delete('/discounts/:id([0-9]+)', (req, res) => {
   const result = deleteDiscount(Number(req.params.id));
   if (result.status === 200) broadcast('marketing', { kind: 'discount', action: 'deleted', id: Number(req.params.id) });
   res.status(result.status).json(result.body);
@@ -65,13 +76,13 @@ router.post('/coupons', (req, res) => {
   res.status(result.status).json(result.body);
 });
 
-router.patch('/coupons/:id(\\d+)', (req, res) => {
+router.patch('/coupons/:id([0-9]+)', (req, res) => {
   const result = updateCoupon(Number(req.params.id), req.body || {});
   if (result.status === 200) broadcast('marketing', { kind: 'coupon', action: 'updated', id: Number(req.params.id) });
   res.status(result.status).json(result.body);
 });
 
-router.delete('/coupons/:id(\\d+)', (req, res) => {
+router.delete('/coupons/:id([0-9]+)', (req, res) => {
   const result = deleteCoupon(Number(req.params.id));
   if (result.status === 200) broadcast('marketing', { kind: 'coupon', action: 'deleted', id: Number(req.params.id) });
   res.status(result.status).json(result.body);
@@ -93,15 +104,65 @@ router.post('/certificates', (req, res) => {
   res.status(result.status).json(result.body);
 });
 
-router.patch('/certificates/:id(\\d+)', (req, res) => {
+router.patch('/certificates/:id([0-9]+)', (req, res) => {
   const result = updateCertificate(Number(req.params.id), req.body || {});
   if (result.status === 200) broadcast('marketing', { kind: 'certificate', action: 'updated', id: Number(req.params.id) });
   res.status(result.status).json(result.body);
 });
 
-router.delete('/certificates/:id(\\d+)', (req, res) => {
+router.delete('/certificates/:id([0-9]+)', (req, res) => {
   const result = deleteCertificate(Number(req.params.id));
   if (result.status === 200) broadcast('marketing', { kind: 'certificate', action: 'deleted', id: Number(req.params.id) });
+  res.status(result.status).json(result.body);
+});
+
+/* --- лояльность: бонусы или рефералы --- */
+
+router.get('/loyalty', (req, res) => {
+  res.json(loyaltyOverview());
+});
+
+router.patch('/loyalty', (req, res) => {
+  const settings = saveLoyaltySettings(req.body || {});
+  broadcast('marketing', { kind: 'loyalty', action: 'updated' });
+  res.json({ settings });
+});
+
+router.get('/loyalty/bonus', (req, res) => {
+  res.json(listBonusClients({ q: req.query.q || '', limit: req.query.limit }));
+});
+
+router.get('/loyalty/bonus/:id([0-9]+)', (req, res) => {
+  const data = bonusHistory(Number(req.params.id));
+  if (!data) return res.status(404).json({ error: 'not_found', message: 'Клиент не найден' });
+  res.json(data);
+});
+
+router.post('/loyalty/bonus/:id([0-9]+)/adjust', (req, res) => {
+  const result = adjustBonus(Number(req.params.id), req.body || {});
+  if (result.status === 200) broadcast('marketing', { kind: 'bonus', action: 'adjusted', id: Number(req.params.id) });
+  res.status(result.status).json(result.body);
+});
+
+router.get('/loyalty/referrals', (req, res) => {
+  res.json(listReferrals({ status: req.query.status || 'all', q: req.query.q || '' }));
+});
+
+router.post('/loyalty/referrals', (req, res) => {
+  const result = createReferral(req.body || {});
+  if (result.status === 201) broadcast('marketing', { kind: 'referral', action: 'created', id: result.body.referral.id });
+  res.status(result.status).json(result.body);
+});
+
+router.post('/loyalty/referrals/:id([0-9]+)/reward', (req, res) => {
+  const result = rewardReferral(Number(req.params.id));
+  if (result.status === 200) broadcast('marketing', { kind: 'referral', action: 'rewarded', id: Number(req.params.id) });
+  res.status(result.status).json(result.body);
+});
+
+router.post('/loyalty/referrals/:id([0-9]+)/cancel', (req, res) => {
+  const result = cancelReferral(Number(req.params.id));
+  if (result.status === 200) broadcast('marketing', { kind: 'referral', action: 'cancelled', id: Number(req.params.id) });
   res.status(result.status).json(result.body);
 });
 

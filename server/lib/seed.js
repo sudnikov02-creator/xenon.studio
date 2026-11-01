@@ -432,6 +432,54 @@ export function ensureSeed() {
       insertCertificate.run(code, kind, amount, remaining, serviceId, recipient, phone, email, purchased, expires, status, note, iso(-30, 12, 0), iso(-3, 12, 0));
     });
 
+    /* бонусы и рефералы */
+    const refCodes = ['ANNA24', 'MARIA7', 'DMITRY', 'ELENA5', 'IRINA3', 'PAVEL9', 'OLGA88', 'VIKA12', 'ALINA6', 'SERGEY'];
+    const setRef = db.prepare('UPDATE clients SET ref_code = ? WHERE id = ?');
+    clientIds.forEach((id, index) => setRef.run(refCodes[index], id));
+
+    const insertBonus = db.prepare(
+      `INSERT INTO bonus_transactions (client_id, booking_id, kind, amount, reason, expires_at, created_at)
+       VALUES (?, NULL, ?, ?, ?, ?, ?)`
+    );
+    const bonuses = [
+      [0, 'earn', 1200, 'Кешбэк 5% за съёмку', dayKey(300), iso(-30, 12, 0)],
+      [0, 'spend', -500, 'Оплата баллами', null, iso(-12, 12, 0)],
+      [1, 'earn', 900, 'Кешбэк 5% за съёмку', dayKey(280), iso(-45, 12, 0)],
+      [3, 'earn', 1500, 'Кешбэк 5% за съёмку', dayKey(310), iso(-20, 12, 0)],
+      [3, 'spend', -700, 'Оплата баллами', null, iso(-8, 12, 0)],
+      [6, 'earn', 2100, 'Кешбэк 5% за съёмку', dayKey(340), iso(-14, 12, 0)],
+      [8, 'earn', 500, 'Приветственные баллы', dayKey(360), iso(-4, 12, 0)]
+    ];
+    bonuses.forEach(([index, kind, amount, reason, expires, created]) => {
+      insertBonus.run(clientIds[index], kind, amount, reason, expires, created);
+    });
+
+    const syncBonus = db.prepare(
+      `INSERT INTO bonus_accounts (client_id, balance, total_earned, total_spent, updated_at)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT(client_id) DO UPDATE SET balance = excluded.balance,
+         total_earned = excluded.total_earned, total_spent = excluded.total_spent, updated_at = excluded.updated_at`
+    );
+    clientIds.forEach((id) => {
+      const rows = db.prepare('SELECT amount, expires_at FROM bonus_transactions WHERE client_id = ?').all(id);
+      const today = dayKey(0);
+      const live = rows.filter((row) => row.amount > 0 && (!row.expires_at || row.expires_at >= today)).reduce((sum, row) => sum + row.amount, 0);
+      const earned = rows.filter((row) => row.amount > 0).reduce((sum, row) => sum + row.amount, 0);
+      const spent = rows.filter((row) => row.amount < 0).reduce((sum, row) => sum - row.amount, 0);
+      if (earned || spent) syncBonus.run(id, Math.max(live - spent, 0), earned, spent, iso(0, 12, 0));
+    });
+
+    const insertReferral = db.prepare(
+      `INSERT INTO referrals (inviter_client_id, invited_client_id, invited_name, invited_phone, code, status,
+                              booking_id, reward_inviter, reward_invited, rewarded_at, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`
+    );
+    insertReferral.run(clientIds[0], clientIds[8], 'Алина Гурская', '+375 29 604-17-35', refCodes[0], 'pending', 1000, 500, null, 'Пришла по ссылке из Telegram', iso(-6, 12, 0), iso(-6, 12, 0));
+    insertReferral.run(clientIds[1], clientIds[9], 'Сергей Мельник', '+375 33 508-92-61', refCodes[1], 'pending', 1000, 500, null, null, iso(-3, 12, 0), iso(-3, 12, 0));
+    insertReferral.run(clientIds[3], null, 'Наталья Ким', '+375 44 190-33-27', refCodes[3], 'rewarded', 1000, 500, iso(-18, 12, 0), 'Ссылка на свадебную съёмку', iso(-32, 12, 0), iso(-18, 12, 0));
+    insertReferral.run(clientIds[6], null, 'Григорий Морозов', null, refCodes[6], 'rewarded', 1000, 500, iso(-40, 12, 0), null, iso(-52, 12, 0), iso(-40, 12, 0));
+    insertReferral.run(clientIds[5], null, 'Артём Волков', '+375 25 771-18-04', refCodes[5], 'cancelled', 1000, 500, null, 'Отменил съёмку', iso(-22, 12, 0), iso(-15, 12, 0));
+
     /* activity log */
     const activity = [
       ['booking', 'Новая заявка от Марии Лебедевой', 'Love story · сегодня, 15:30', 'booking', 2],

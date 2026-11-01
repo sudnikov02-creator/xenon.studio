@@ -1,4 +1,5 @@
 import { db, logActivity } from '../db.js';
+import { bonusAvailable, clientRefCode } from './loyalty.js';
 import { localToday, toLocalDate } from './bookings.js';
 
 const MAX_NOTE = 2000;
@@ -196,6 +197,14 @@ export function clientDetail(id) {
       upcoming: bookings.filter((item) => item.startsAt && new Date(item.startsAt) >= new Date()).length,
       firstVisit: bookings.length ? bookings[bookings.length - 1].localDate : null,
       services: Array.from(new Set(bookings.map((item) => item.service))).slice(0, 6)
+    },
+    loyalty: {
+      balance: bonusAvailable(row.id),
+      refCode: clientRefCode(row.id),
+      invited: db.prepare('SELECT COUNT(*) AS n FROM referrals WHERE inviter_client_id = ?').get(row.id).n,
+      rewarded: db
+        .prepare("SELECT COUNT(*) AS n FROM referrals WHERE inviter_client_id = ? AND status = 'rewarded'")
+        .get(row.id).n
     },
     today
   };

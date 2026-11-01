@@ -1,4 +1,5 @@
 import { db, getSettings } from '../db.js';
+import { bonusForQuote, referralDiscount } from './loyalty.js';
 
 /**
  * Движок цен. Один расчёт используется и публичной формой, и панелью, и созданием записи,
@@ -8,7 +9,8 @@ import { db, getSettings } from '../db.js';
  *   1. базовая цена услуги или пакета + опции;
  *   2. автоматические скидки (VIP, лояльность, акции) — берётся самая крупная;
  *   3. промокод — считается от остатка;
- *   4. сертификат — списывается с остатка.
+ *   4. сертификат — списывается с остатка;
+ *   5. бонусные баллы — по желанию клиента, с лимитом от суммы заказа.
  */
 
 const MAX_ADDON_QTY = 20;
@@ -163,6 +165,12 @@ function autoDiscounts({ subtotal, item, client, today }) {
     }
   }
 
+  const referral = referralDiscount(client?.id);
+  if (referral) {
+    const amount = Math.min(round(referral.amount), subtotal);
+    if (amount > 0) found.push({ ...referral, amount });
+  }
+
   const rows = db
     .prepare('SELECT * FROM discounts WHERE deleted_at IS NULL AND is_active = 1 AND auto = 1 ORDER BY priority DESC, id ASC')
     .all();
@@ -233,7 +241,7 @@ function certificateProblem(row, today) {
 
 /* --- публичный расчёт --- */
 
-export function quote({ serviceId, packageId, addons, code, phone, clientId, date } = {}) {
+export function quote({ serviceId, packageId, addons, code, phone, clientId, date, useBonus = false, bonusRequested = null } = {}) {
   const today = dayKey(date ? new Date(`${String(date).slice(0, 10)}T00:00:00.000Z`) : new Date());
   const item = itemSnapshot({ serviceId, packageId });
   if (!item) {
@@ -302,7 +310,23 @@ export function quote({ serviceId, packageId, addons, code, phone, clientId, dat
   }
 
   const promoAmount = promo ? promo.amount : 0;
-  const total = Math.max(afterDiscount - promoAmount, 0);
+  const afterPromo = Math.max(afterDiscount - promoAmount, 0);
+
+  const plan = bonusForQuote({ clientId: client?.id, subtotal });
+  const wanted = bonusRequested === null || bonusRequested === undefined ? null : Math.max(round(bonusRequested), 0);
+  let bonusApplied = 0;
+  if (useBonus && plan.available > 0) {
+    const cap = Math.min(plan.available, plan.limit, afterPromo);
+    bonusApplied = wanted === null ? cap : Math.min(wanted, cap);
+  }
+  const bonus = {
+    available: plan.available,
+    limit: Math.min(plan.limit, afterPromo),
+    applied: bonusApplied,
+    used: useBonus && bonusApplied > 0
+  };
+
+  const total = Math.max(afterPromo - bonusApplied, 0);
 
   return {
     item: { kind: item.kind, id: item.id, name: item.name, price: base, duration: item.duration },
@@ -316,14 +340,17 @@ export function quote({ serviceId, packageId, addons, code, phone, clientId, dat
     promo,
     promoError,
     afterDiscount,
+    afterPromo,
+    bonus,
+    afterBonus: total,
     total,
     today
   };
 }
 
 /** Для записи: то, что нужно записать в брони, промокоды и сертификаты. */
-export function priceForBooking({ serviceId, packageId, addons, code, phone, clientId }) {
-  const result = quote({ serviceId, packageId, addons, code, phone, clientId });
+export function priceForBooking({ serviceId, packageId, addons, code, phone, clientId, useBonus = false, bonusRequested = null }) {
+  const result = quote({ serviceId, packageId, addons, code, phone, clientId, useBonus, bonusRequested });
   if (result.error) return result;
   return {
     ...result,

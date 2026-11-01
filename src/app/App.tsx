@@ -26,6 +26,11 @@ const StatusesPage = lazy(() => import('../pages/admin/StatusesPage').then((m) =
 const BookingsPage = lazy(() => import('../pages/admin/BookingsPage').then((m) => ({ default: m.BookingsPage })));
 const ClientsPage = lazy(() => import('../pages/admin/ClientsPage').then((m) => ({ default: m.ClientsPage })));
 const MessagesPage = lazy(() => import('../pages/admin/MessagesPage').then((m) => ({ default: m.MessagesPage })));
+const DiscountsPage = lazy(() => import('../pages/admin/DiscountsPage').then((m) => ({ default: m.DiscountsPage })));
+const CouponsPage = lazy(() => import('../pages/admin/CouponsPage').then((m) => ({ default: m.CouponsPage })));
+const CertificatesPage = lazy(() =>
+  import('../pages/admin/CertificatesPage').then((m) => ({ default: m.CertificatesPage }))
+);
 const BookingFormSettingsPage = lazy(() =>
   import('../pages/admin/BookingFormSettingsPage').then((m) => ({ default: m.BookingFormSettingsPage }))
 );
@@ -45,12 +50,7 @@ function GuestOnly({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-const MARKETING_ROUTES: { path: string; section: string }[] = [
-  { path: 'marketing/discounts', section: 'discounts' },
-  { path: 'marketing/coupons', section: 'coupons' },
-  { path: 'marketing/certificates', section: 'certificates' },
-  { path: 'marketing/bonuses', section: 'bonuses' }
-];
+const MARKETING_ROUTES: { path: string; section: string }[] = [{ path: 'marketing/bonuses', section: 'bonuses' }];
 
 const SETTINGS_ROUTES: { path: string; section: string }[] = [
   { path: 'settings/notifications', section: 'notifications' },
@@ -120,6 +120,9 @@ export function App() {
                     <Route path="settings/statuses" element={<StatusesPage />} />
                     <Route path="clients" element={<ClientsPage />} />
                     <Route path="messages" element={<MessagesPage />} />
+                    <Route path="marketing/discounts" element={<DiscountsPage />} />
+                    <Route path="marketing/coupons" element={<CouponsPage />} />
+                    <Route path="marketing/certificates" element={<CertificatesPage />} />
                     {SECTION_ROUTES.map((route) => (
                       <Route
                         key={route.path}

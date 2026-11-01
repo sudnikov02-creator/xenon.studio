@@ -916,6 +916,105 @@
 .bk-sum__grand b { font-size: 16px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
 .bk-sum--compact .bk-sum__rows { display: none; }
 
+/* скидки и промокод в итоге записи */
+.bk-sum__total[data-sale] {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.bk-sum__total s {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-2);
+  text-decoration-thickness: 1px;
+}
+.bk-sum__saving {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  background: var(--success-soft, #ecfdf3);
+  animation: discount-reveal 0.3s var(--ease-out);
+}
+.bk-sum__saving span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px !important;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--success) 78%, #052e16) !important;
+}
+.bk-sum__saving span svg { width: 13px; height: 13px; }
+.bk-sum__saving b { font-size: 13px; font-weight: 700; color: var(--success); }
+.bk-sum__saving--promo { background: var(--accent-soft); }
+.bk-sum__saving--promo span { color: var(--accent-hover) !important; }
+.bk-sum__saving--promo b { color: var(--accent-hover); }
+
+@keyframes discount-reveal {
+  from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+.bk-sum__promo {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.bk-promo {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.bk-promo .input-wrap { flex: 1; }
+.bk-promo .input {
+  min-height: 34px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.bk-promo .btn { flex: none; height: 34px; }
+.bk-promo__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--accent-hover);
+  padding: 2px 0;
+  align-self: flex-start;
+  transition: opacity var(--t) var(--ease);
+}
+.bk-promo__toggle svg { width: 13px; height: 13px; }
+.bk-promo__toggle:hover { opacity: 0.75; }
+.bk-promo-applied {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px 6px 10px;
+  border-radius: var(--r-sm);
+  border: 1px dashed color-mix(in srgb, var(--success) 40%, var(--line));
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.bk-promo-applied > svg { width: 13px; height: 13px; color: var(--success); }
+.bk-promo-applied span { flex: 1; }
+.bk-promo-applied button {
+  display: inline-flex;
+  color: var(--muted-2);
+  transition: color var(--t) var(--ease);
+}
+.bk-promo-applied button:hover { color: var(--danger); }
+.bk-promo-applied button svg { width: 13px; height: 13px; }
+.bk-promo__error {
+  font-size: 11.5px;
+  color: var(--danger);
+}
+
 /* ------------------------------- success ------------------------------- */
 .bk-success {
   display: flex;

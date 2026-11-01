@@ -23,6 +23,7 @@ import type {
   BookingDraft,
   BookingFormOptions,
   CreatedBooking,
+  PriceQuote,
   SlotsResponse
 } from '../../types';
 
@@ -48,6 +49,11 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedBooking | null>(null);
+  const [quote, setQuote] = useState<PriceQuote | null>(null);
+  const [promoInput, setPromoInput] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoBusy, setPromoBusy] = useState(false);
   const submittingRef = useRef(false);
 
   const requireVerification = variant === 'public' && Boolean(options?.form.requireVerification);
@@ -55,6 +61,59 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
   const totals = useMemo(() => draftTotal(item, draft), [item, draft]);
   const currency = options?.branding.currencySymbol || '₽';
   const errors = useMemo(() => (showErrors ? contactErrors(draft) : {}), [draft, showErrors]);
+  const addonsPayload = useMemo(() => buildAddonsPayload(draft), [draft.addons]);
+  const phoneDigits = draft.phone.replace(/\D/g, '');
+
+  /* Живой расчёт: скидки и промокод показываются ещё до отправки заявки. */
+  useEffect(() => {
+    if (!item) {
+      setQuote(null);
+      return;
+    }
+    let alive = true;
+    const timer = setTimeout(() => {
+      api
+        .post<{ quote: PriceQuote }>('/public/booking/quote', {
+          serviceId: draft.serviceId,
+          packageId: draft.packageId,
+          addons: addonsPayload,
+          code: promoCode || undefined,
+          phone: phoneDigits.length >= 11 ? draft.phone : undefined,
+          date: draft.date || undefined
+        })
+        .then((data) => {
+          if (!alive) return;
+          setQuote(data.quote);
+          if (promoCode && data.quote.promoError) setPromoError(data.quote.promoError);
+          else if (promoCode && data.quote.promo) setPromoError(null);
+        })
+        .catch(() => {
+          if (alive) setQuote(null);
+        });
+    }, promoCode ? 0 : 220);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [item, draft.serviceId, draft.packageId, addonsPayload, promoCode, phoneDigits, draft.date]);
+
+  const applyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    setPromoBusy(true);
+    setPromoError(null);
+    setPromoCode(code);
+    setTimeout(() => setPromoBusy(false), 400);
+  };
+
+  const clearPromo = () => {
+    setPromoCode('');
+    setPromoInput('');
+    setPromoError(null);
+  };
+
+  const payable = quote ? quote.total : totals.total;
+  const discountTotal = quote ? Math.max(quote.subtotal - quote.total, 0) : 0;
 
   useEffect(() => {
     let alive = true;
@@ -182,7 +241,8 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
           packageId: draft.packageId,
           date: draft.date,
           time: draft.time,
-          addons: buildAddonsPayload(draft),
+          addons: addonsPayload,
+          promoCode: promoCode || undefined,
           verificationToken: token
         };
         const data = await api.post<CreatedBooking>(
@@ -395,6 +455,14 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
               draft={draft}
               item={item}
               totals={totals}
+              quote={quote}
+              promoInput={promoInput}
+              promoCode={promoCode}
+              promoError={promoError}
+              promoBusy={promoBusy}
+              onPromoInput={setPromoInput}
+              onApplyPromo={applyPromo}
+              onClearPromo={clearPromo}
               requireVerification={requireVerification}
               code={code}
               onCode={(value) => {
@@ -433,7 +501,8 @@ export function BookingWizard({ variant = 'public', onClose }: { variant?: Varia
 
         <div className="bk__total">
           <span>{item ? item.name : 'Выберите услугу'}</span>
-          <b className="tnum">{formatPrice(totals.total, currency)}</b>
+          {discountTotal > 0 && <s className="tnum">{formatPrice(quote?.subtotal ?? totals.total, currency)}</s>}
+          <b className="tnum">{formatPrice(payable, currency)}</b>
         </div>
 
         <button

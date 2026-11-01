@@ -4,6 +4,8 @@ import { getBookingById } from './bookings.js';
 import { makePublicCode } from './seed.js';
 import { collectItem, isValidDateKey, isoForLocal, localKeyOf, slotsForDate } from './slots.js';
 import { normalizePhone, prettyPhone, checkToken, consumeToken } from './verification.js';
+import { priceForBooking, priceAddons as priceAddonLines } from './pricing.js';
+import { redeemPromo } from './marketing.js';
 
 const MAX_NAME = 80;
 const MAX_NOTE = 600;
@@ -62,24 +64,9 @@ function upsertClient({ name, phone, email, instagram, note, isAdmin }) {
   return { id: Number(info.lastInsertRowid), created: true };
 }
 
+/* Цены и опции считает общий движок — тот же, что показывает формула на сайте. */
 function priceAddons(addons, requested) {
-  const list = Array.isArray(requested) ? requested : [];
-  const chosen = [];
-  let extra = 0;
-  for (const item of list) {
-    const source = addons.find((addon) => addon.id === item?.id || addon.name === item?.name);
-    if (!source) continue;
-    if (source.type === 'quantity') {
-      const qty = Math.max(0, Math.min(MAX_ADDON_QTY, Math.round(Number(item.qty) || 0)));
-      if (!qty) continue;
-      chosen.push({ id: source.id, name: source.name, type: 'quantity', price: source.price, unit: source.unit || 'шт', qty });
-      extra += source.price * qty;
-    } else if (item.selected !== false && item.qty !== 0) {
-      chosen.push({ id: source.id, name: source.name, type: 'toggle', price: source.price, qty: 1 });
-      extra += source.price;
-    }
-  }
-  return { addons: chosen, extra };
+  return priceAddonLines(addons, requested);
 }
 
 export function validatePayload(payload) {
@@ -158,8 +145,22 @@ export function createBooking({ payload, source = 'client', verificationToken, f
     };
   }
 
-  const { addons, extra } = priceAddons(item.addons, payload?.addons);
-  const price = Math.round(item.price + extra);
+  const { addons } = priceAddons(item.addons, payload?.addons);
+  const quote = priceForBooking({
+    serviceId,
+    packageId,
+    addons,
+    code: payload?.promoCode || payload?.code,
+    phone,
+    clientId: null
+  });
+  if (quote.error) {
+    return { status: 404, body: { error: quote.error, message: quote.message } };
+  }
+  if (quote.promoError) {
+    return { status: 422, body: { error: 'promo_invalid', message: quote.promoError, field: 'promoCode' } };
+  }
+  const price = quote.price;
   const status = initialStatus();
   if (!status) {
     return { status: 500, body: { error: 'no_initial_status', message: 'Не настроены статусы записей' } };
@@ -193,8 +194,10 @@ export function createBooking({ payload, source = 'client', verificationToken, f
     const info = db
       .prepare(
         `INSERT INTO bookings (public_code, client_id, service_id, package_id, starts_at, duration_min,
-                               price, addons, status_id, source, notes, client_note, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`
+                               price, list_price, discount_amount, discount_id, coupon_id, coupon_code,
+                               certificate_id, certificate_code, addons, status_id, source, notes, client_note,
+                               created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`
       )
       .run(
         makePublicCode(),
@@ -204,6 +207,13 @@ export function createBooking({ payload, source = 'client', verificationToken, f
         startsAt,
         item.duration,
         price,
+        quote.listPrice,
+        quote.listPrice - price,
+        quote.discount?.id ?? null,
+        quote.promo?.type === 'coupon' ? quote.promo.id : null,
+        quote.promo?.type === 'coupon' ? quote.promo.code : null,
+        quote.promo?.type === 'certificate' ? quote.promo.id : null,
+        quote.promo?.type === 'certificate' ? quote.promo.code : null,
         JSON.stringify(addons),
         status.id,
         source,
@@ -219,9 +229,11 @@ export function createBooking({ payload, source = 'client', verificationToken, f
     ).run(
       bookingId,
       isClient ? 'Клиент отправил заявку' : 'Запись создана фотографом',
-      `${item.name} · ${item.duration} мин · ${price}`,
+      `${item.name} · ${item.duration} мин · ${price}${quote.discountTotal > 0 ? ` · скидка ${quote.discountTotal}` : ''}`,
       isClient ? 'client' : 'photographer'
     );
+
+    redeemPromo({ quote, bookingId, clientId: client.id, phone });
 
     db.prepare(
       `INSERT INTO notifications (kind, title, subtitle, action_label, action_url, is_read)

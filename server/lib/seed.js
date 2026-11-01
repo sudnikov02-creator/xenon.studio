@@ -27,6 +27,12 @@ function hasData() {
   return users > 0 || settings > 0;
 }
 
+function dayKey(offsetDays) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
 /**
  * Демо-студия с примерами записей — только для разработки и предпросмотра.
  * На боевом сервере база поднимается пустой: приложение само создаёт схему,
@@ -378,6 +384,52 @@ export function ensureSeed() {
     );
     notifications.forEach(([kind, title, subtitle, label, url, read], i) => {
       insertNotif.run(kind, title, subtitle, label, url, read, iso(0, 9, 10 + i * 7));
+    });
+
+    /* маркетинг: скидки, промокоды, сертификаты */
+    const insertDiscount = db.prepare(
+      `INSERT INTO discounts (name, kind, value, scope, item_ids, min_amount, audience, auto, stackable,
+                              priority, starts_on, ends_on, is_active, used_count, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const discounts = [
+      ['Первый визит', 'percent', 10, 'all', '[]', 0, 'new', 1, 10, dayKey(-30), dayKey(60), 1, 4, 'Мягкий вход для новых клиентов'],
+      ['Пакет из трёх съёмок', 'percent', 15, 'all', '[]', 15000, 'all', 1, 20, null, null, 1, 2, 'Действует от 15 000 ₽'],
+      ['Скидка на семейную съёмку', 'fixed', 2000, 'service', JSON.stringify([3]), 0, 'all', 1, 5, null, dayKey(45), 1, 3, null],
+      ['Летняя акция Love story', 'percent', 12, 'package', JSON.stringify([1]), 0, 'repeat', 0, 0, dayKey(-90), dayKey(-10), 0, 0, 'Архивная акция']
+    ];
+    discounts.forEach(([name, kind, value, scope, itemIds, min, audience, auto, priority, from, to, active, used, note]) => {
+      insertDiscount.run(name, kind, value, scope, itemIds, min, audience, auto, priority, from, to, active, used, note, iso(-40, 10, 0), iso(-10, 10, 0));
+    });
+
+    const insertCoupon = db.prepare(
+      `INSERT INTO coupons (code, title, kind, value, discount_id, limit_total, limit_per_client, used_count,
+                            min_amount, starts_on, ends_on, is_active, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const coupons = [
+      ['SPRING15', 'Весенняя скидка', 'percent', 15, null, 50, 1, 12, 0, dayKey(-60), dayKey(30), 1, 'Рассылка в Telegram'],
+      ['LOVE2000', 'Скидка на Love story', 'fixed', 2000, null, 20, 1, 5, 0, dayKey(-20), null, 1, null],
+      ['FAMILY10', 'Семейная съёмка', 'percent', 10, 3, 0, 2, 3, 0, null, dayKey(90), 1, 'Для постоянных клиентов'],
+      ['REFERRAL500', 'За рекомендацию', 'fixed', 500, null, 100, 1, 100, 0, dayKey(-180), dayKey(-120), 0, 'Старая кампания']
+    ];
+    coupons.forEach(([code, title, kind, value, discountId, limitTotal, limitPerClient, used, min, from, to, active, note]) => {
+      insertCoupon.run(code, title, kind, value, discountId, limitTotal, limitPerClient, used, min, from, to, active, note, iso(-50, 11, 0), iso(-5, 11, 0));
+    });
+
+    const insertCertificate = db.prepare(
+      `INSERT INTO certificates (code, kind, amount, remaining, service_id, recipient, phone, email,
+                                 purchased_at, expires_at, status, note, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const certificates = [
+      ['GIFT-8K00-XMAS', 'amount', 8000, 8000, null, 'Ольга Морозова', '+375 29 441-22-08', 'olga.m@gmail.com', dayKey(-25), dayKey(3), 'active', 'Подарок на день рождения'],
+      ['GIFT-LOVE-24', 'service', 6500, 6500, 2, 'Мария Лебедева', '+375 33 705-91-14', 'm.lebedeva@gmail.com', dayKey(-40), dayKey(120), 'active', null],
+      ['GIFT-5K-NEWY', 'amount', 5000, 2000, null, 'Сергей Мельник', '+375 33 508-92-61', null, dayKey(-90), dayKey(180), 'active', 'Часть уже потрачена'],
+      ['GIFT-OLD-2025', 'amount', 4000, 4000, null, 'Павел Никитин', null, null, dayKey(-400), dayKey(-40), 'active', null]
+    ];
+    certificates.forEach(([code, kind, amount, remaining, serviceId, recipient, phone, email, purchased, expires, status, note]) => {
+      insertCertificate.run(code, kind, amount, remaining, serviceId, recipient, phone, email, purchased, expires, status, note, iso(-30, 12, 0), iso(-3, 12, 0));
     });
 
     /* activity log */

@@ -12,6 +12,7 @@ import {
   startVerification
 } from '../lib/verification.js';
 import { createBooking } from '../lib/booking-create.js';
+import { quote } from '../lib/pricing.js';
 
 const router = express.Router();
 
@@ -157,6 +158,35 @@ router.post('/booking/verify/confirm', (req, res) => {
     return res.status(status).json({ error: result.error, message: result.message });
   }
   res.json(result);
+});
+
+/* Расчёт стоимости для формы записи: скидки, промокод и сертификат проверяются здесь же. */
+router.post('/booking/quote', (req, res) => {
+  const limit = rateLimit(`quote:${req.ip}`, 120, 10 * 60 * 1000);
+  if (!limit.allowed) {
+    return res.status(429).json({ error: 'rate_limited', message: 'Слишком много запросов. Подождите немного' });
+  }
+  const body = req.body || {};
+  const result = quote({
+    serviceId: body.serviceId ? Number(body.serviceId) : null,
+    packageId: body.packageId ? Number(body.packageId) : null,
+    addons: body.addons,
+    code: body.code,
+    phone: normalizePhone(body.phone),
+    date: body.date
+  });
+  if (result.error) {
+    return res.status(404).json({ error: result.error, message: result.message });
+  }
+  const settings = getSettings();
+  res.json({
+    quote: result,
+    currency: {
+      symbol: settings.currencySymbol,
+      separator: settings.decimalSeparator,
+      code: settings.currencyCode
+    }
+  });
 });
 
 router.post('/booking', (req, res) => {

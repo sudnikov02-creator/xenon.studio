@@ -8,6 +8,7 @@ import './styles/layout.css';
 import './styles/dashboard.css';
 import './styles/services.css';
 import './styles/booking.css';
+import './styles/bookings.css';
 import { App } from './app/App';
 
 const container = document.getElementById('root');

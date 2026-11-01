@@ -22,6 +22,7 @@ const SectionPreviewPage = lazy(() =>
 );
 const ServicesPage = lazy(() => import('../pages/admin/ServicesPage').then((m) => ({ default: m.ServicesPage })));
 const SchedulePage = lazy(() => import('../pages/admin/SchedulePage').then((m) => ({ default: m.SchedulePage })));
+const BookingsPage = lazy(() => import('../pages/admin/BookingsPage').then((m) => ({ default: m.BookingsPage })));
 const BookingFormSettingsPage = lazy(() =>
   import('../pages/admin/BookingFormSettingsPage').then((m) => ({ default: m.BookingFormSettingsPage }))
 );
@@ -62,7 +63,6 @@ const SETTINGS_ROUTES: { path: string; section: string }[] = [
 ];
 
 const SECTION_ROUTES: { path: string; section: string }[] = [
-  { path: 'bookings', section: 'bookings' },
   { path: 'calendar', section: 'calendar' },
   { path: 'clients', section: 'clients' },
   { path: 'messages', section: 'messages' },
@@ -116,6 +116,7 @@ export function App() {
                     <Route path="services" element={<ServicesPage />} />
                     <Route path="settings/schedule" element={<SchedulePage />} />
                     <Route path="settings/booking-form" element={<BookingFormSettingsPage />} />
+                    <Route path="bookings" element={<BookingsPage />} />
                     {SECTION_ROUTES.map((route) => (
                       <Route
                         key={route.path}

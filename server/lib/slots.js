@@ -107,10 +107,33 @@ export function busyForDate(dateKey) {
          AND b.starts_at >= ? AND b.starts_at < ?`
     )
     .all(range.start, range.end);
-  return rows.map((row) => {
+  /* Личные события из внешнего календаря тоже занимают время. */
+  const external = db
+    .prepare(
+      `SELECT starts_at, ends_at, all_day FROM external_events
+       WHERE ends_at > ? AND starts_at < ?`
+    )
+    .all(range.start, range.end);
+
+  const busy = rows.map((row) => {
     const start = localMinutesOf(row.starts_at);
     return { from: start, to: start + Math.max(10, Number(row.duration_min) || 60) };
   });
+
+  for (const row of external) {
+    if (row.all_day) {
+      busy.push({ from: 0, to: 24 * 60 });
+      continue;
+    }
+    const startIso = new Date(row.starts_at);
+    const endIso = new Date(row.ends_at);
+    const startMin = localMinutesOf(startIso.toISOString());
+    let endMin = localMinutesOf(endIso.toISOString());
+    if (endMin <= startMin && localKeyOf(endIso.toISOString()) > localKeyOf(startIso.toISOString())) endMin = 24 * 60;
+    busy.push({ from: startMin, to: endMin });
+  }
+
+  return busy;
 }
 
 export function collectItem({ serviceId, packageId }) {

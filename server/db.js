@@ -365,6 +365,17 @@ CREATE TABLE IF NOT EXISTS automation_log (
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS external_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  uid        TEXT NOT NULL UNIQUE,
+  title      TEXT,
+  starts_at  TEXT NOT NULL,
+  ends_at    TEXT NOT NULL,
+  all_day    INTEGER NOT NULL DEFAULT 0,
+  source     TEXT NOT NULL DEFAULT 'apple',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS lookups (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   kind       TEXT NOT NULL,
@@ -387,6 +398,7 @@ CREATE INDEX IF NOT EXISTS idx_bonus_tx_client ON bonus_transactions(client_id, 
 CREATE INDEX IF NOT EXISTS idx_referrals_inviter ON referrals(inviter_client_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_automation_log ON automation_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_automation_marks ON automation_marks(automation_id, entity, entity_id);
+CREATE INDEX IF NOT EXISTS idx_external_events ON external_events(starts_at);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -435,7 +447,7 @@ export const DEFAULT_SETTINGS = {
   verification: { enabled: false, telegram: true, email: false },
   agreement: { enabled: false, text: '', consentText: '' },
   seo: { title: 'xenon.studio — фотосессии', description: '', ogImage: null },
-  appleCalendar: { enabled: false, url: '' },
+  appleCalendar: { enabled: false, url: '', exportToken: null, lastSyncAt: null, lastSyncCount: 0, lastSyncError: null },
   vipDiscount: { enabled: false, percent: 10 },
   loyalty: { enabled: false, percent: 5, afterSessions: 3 },
   marketing: {
@@ -544,6 +556,14 @@ export function saveSettings(patch) {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+/* Журнал действий живёт в этом модуле, а SSE — в lib/sse.js (он сам импортирует db),
+   поэтому обратный вызов подписывается снаружи: app.js регистрирует трансляцию события. */
+let activitySubscriber = null;
+
+export function onActivityLogged(listener) {
+  activitySubscriber = listener;
+}
+
 export function logActivity({ type, title, description = null, entity = null, entityId = null, actor = 'photographer' }) {
   const info = db
     .prepare(
@@ -551,5 +571,10 @@ export function logActivity({ type, title, description = null, entity = null, en
        VALUES (?, ?, ?, ?, ?, ?)`
     )
     .run(type, title, description, entity, entityId, actor);
+  if (activitySubscriber) {
+    try {
+      activitySubscriber({ action: 'logged', id: info.lastInsertRowid, type, actor });
+    } catch {}
+  }
   return info.lastInsertRowid;
 }

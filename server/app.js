@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { seedIfEmpty } from './lib/seed.js';
 import { purgeExpiredSessions } from './lib/auth.js';
 import { initPush } from './lib/push.js';
+import { broadcast } from './lib/sse.js';
+import { onActivityLogged } from './db.js';
 import { ensureTemplates, tick } from './lib/automation.js';
 
 import authRoutes from './routes/auth.js';
@@ -25,6 +27,9 @@ import clientsRoutes from './routes/clients.js';
 import messagesRoutes from './routes/messages.js';
 import marketingRoutes from './routes/marketing.js';
 import automationRoutes from './routes/automation.js';
+import calendarRoutes, { icsFeedHandler } from './routes/calendar.js';
+import analyticsRoutes from './routes/analytics.js';
+import activityRoutes from './routes/activity.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, '..', 'dist');
@@ -34,6 +39,9 @@ const hasBuild = fs.existsSync(distDir);
 const SERVERLESS = Boolean(process.env.VERCEL);
 
 let initialized = false;
+
+/* Журнал действий обновляется в открытой панели так же живо, как остальные разделы. */
+onActivityLogged((payload) => broadcast('activity', payload));
 
 let lastAutomationTick = 0;
 
@@ -88,6 +96,9 @@ export function createApp({ serveStatic = true } = {}) {
     res.json({ ok: true, service: 'xenon.studio', time: new Date().toISOString() });
   });
 
+  /* Подписка Apple Calendar: ссылка с секретным токеном, без входа в систему. */
+  app.get('/api/public/calendar/:token.ics', icsFeedHandler);
+
   app.use('/api/auth', authRoutes);
   app.use('/api/settings', settingsRoutes);
   app.use('/api/notifications', notificationRoutes);
@@ -102,6 +113,9 @@ export function createApp({ serveStatic = true } = {}) {
   app.use('/api/messages', messagesRoutes);
   app.use('/api/marketing', marketingRoutes);
   app.use('/api/automation', automationRoutes);
+  app.use('/api/calendar', calendarRoutes);
+  app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/activity', activityRoutes);
   app.use('/api', servicesRoutes);
   app.use('/api', realtimeRoutes);
 
